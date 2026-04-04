@@ -1,0 +1,1277 @@
+// MGB Hub Platform — Prisma Schema completo
+// Cubre los 17 módulos: Auth, Dashboard, CRM, Proyectos, Socios,
+// RRHH, Time Tracking, Finanzas, Documentos, Chat, Calendario,
+// OKRs, Analytics, Portal Clientes, Integraciones, Config, Seguridad
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  SOCIO
+  EMPLEADO
+  CLIENTE
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum CRMStage {
+  LEAD
+  CONTACTED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum LeadScore {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum InteractionType {
+  CALL
+  EMAIL
+  MEETING
+  NOTE
+  WHATSAPP
+  OTHER
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum ExpenseCategory {
+  HOSTING
+  TOOLS
+  SALARIES
+  TAXES
+  OFFICE
+  MARKETING
+  TRAVEL
+  OTHER
+}
+
+enum Currency {
+  ARS
+  USD
+  EUR
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  FREELANCE
+  CONTRACTOR
+}
+
+enum LeaveType {
+  VACATION
+  SICK
+  PERSONAL
+  MATERNITY
+  PATERNITY
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum EventType {
+  MEETING
+  DEADLINE
+  SPRINT
+  MILESTONE
+  HOLIDAY
+  OTHER
+}
+
+enum OKRStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum OKRFrequency {
+  QUARTERLY
+  ANNUAL
+  MONTHLY
+}
+
+enum DocumentType {
+  CONTRACT
+  NDA
+  PROPOSAL
+  INVOICE
+  RECEIPT
+  LEGAL
+  TECHNICAL
+  OTHER
+}
+
+enum MessageType {
+  TEXT
+  FILE
+  IMAGE
+  SYSTEM
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_DUE
+  INVOICE_DUE
+  PROJECT_UPDATE
+  MENTION
+  COMMENT
+  FOLLOW_UP
+  SYSTEM
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  PERMISSION_CHANGE
+  EXPORT
+  SHARE
+}
+
+enum IntegrationType {
+  GITHUB
+  GITLAB
+  GOOGLE_CALENDAR
+  GOOGLE_DRIVE
+  SLACK
+  DISCORD
+  WHATSAPP
+  SMTP
+  WEBHOOK
+}
+
+// ─────────────────────────────────────────────
+// AUTH & USUARIOS
+// ─────────────────────────────────────────────
+
+model User {
+  id                   String    @id @default(cuid())
+  name                 String
+  email                String    @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  role                 UserRole  @default(EMPLEADO)
+  isActive             Boolean   @default(true)
+  twoFactorEnabled     Boolean   @default(false)
+  twoFactorSecret      String?
+  lastLoginAt          DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  accounts             Account[]
+  sessions             Session[]
+
+  partnerProfile       Partner?
+  employeeProfile      Employee?
+  clientProfile        Client?
+
+  assignedTasks        TaskAssignment[]
+  taskComments         TaskComment[]
+  timeEntries          TimeEntry[]
+  sentMessages         Message[]
+  auditLogs            AuditLog[]
+  notifications        Notification[]
+  calendarEvents       CalendarEventAttendee[]
+  documents            Document[]            @relation("DocumentUploader")
+  createdProjects      Project[]             @relation("ProjectCreator")
+  okrOwner             OKR[]
+  checkIns             OKRCheckIn[]
+  performanceReviews   PerformanceReview[]   @relation("Reviewer")
+  performanceReviewsReceived PerformanceReview[] @relation("Reviewee")
+  notificationSettings NotificationSetting?
+  customFieldValues    CustomFieldValue[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: SOCIOS
+// ─────────────────────────────────────────────
+
+model Partner {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  equityPercentage Decimal  @db.Decimal(5, 2) @default(33.33)
+  title            String?
+  specialties      String[]
+  bio              String?  @db.Text
+  linkedinUrl      String?
+  githubUrl        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  capitalContributions CapitalContribution[]
+  profitDistributions  ProfitDistribution[]
+  decisionsMade        DecisionLog[]         @relation("DecisionMaker")
+  decisionsParticipated DecisionLog[]        @relation("DecisionParticipants")
+
+  @@map("partners")
+}
+
+model CapitalContribution {
+  id          String   @id @default(cuid())
+  partnerId   String
+  partner     Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  amount      Decimal  @db.Decimal(14, 2)
+  currency    Currency @default(ARS)
+  description String?
+  date        DateTime
+  createdAt   DateTime @default(now())
+
+  @@map("capital_contributions")
+}
+
+model ProfitDistribution {
+  id          String   @id @default(cuid())
+  partnerId   String
+  partner     Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  amount      Decimal  @db.Decimal(14, 2)
+  currency    Currency @default(ARS)
+  period      String
+  description String?
+  date        DateTime
+  createdAt   DateTime @default(now())
+
+  @@map("profit_distributions")
+}
+
+model DecisionLog {
+  id           String    @id @default(cuid())
+  title        String
+  description  String    @db.Text
+  outcome      String    @db.Text
+  decisionDate DateTime
+  makerId      String
+  maker        Partner   @relation("DecisionMaker", fields: [makerId], references: [id])
+  participants Partner[] @relation("DecisionParticipants")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("decision_logs")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: EMPLEADOS / RRHH
+// ─────────────────────────────────────────────
+
+model Employee {
+  id             String         @id @default(cuid())
+  userId         String         @unique
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobTitle       String
+  department     String?
+  managerId      String?
+  manager        Employee?      @relation("EmployeeManager", fields: [managerId], references: [id])
+  subordinates   Employee[]     @relation("EmployeeManager")
+  employmentType EmploymentType @default(FULL_TIME)
+  startDate      DateTime
+  endDate        DateTime?
+  salary         Decimal?       @db.Decimal(14, 2)
+  salaryCurrency Currency       @default(ARS)
+  skills         String[]
+  bio            String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  attendances        Attendance[]
+  leaveRequests      LeaveRequest[]
+  performanceReviews PerformanceReview[] @relation("EmployeeReviews")
+  onboardingTasks    OnboardingTask[]
+  employeeDocuments  EmployeeDocument[]
+  projectMembers     ProjectMember[]
+
+  @@map("employees")
+}
+
+model Attendance {
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date        DateTime  @db.Date
+  checkIn     DateTime?
+  checkOut    DateTime?
+  hoursWorked Decimal?  @db.Decimal(5, 2)
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  @@unique([employeeId, date])
+  @@map("attendances")
+}
+
+model LeaveRequest {
+  id         String      @id @default(cuid())
+  employeeId String
+  employee   Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type       LeaveType
+  status     LeaveStatus @default(PENDING)
+  startDate  DateTime    @db.Date
+  endDate    DateTime    @db.Date
+  days       Int
+  reason     String?     @db.Text
+  approvedBy String?
+  approvedAt DateTime?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@map("leave_requests")
+}
+
+model PerformanceReview {
+  id           String   @id @default(cuid())
+  employeeId   String
+  employee     Employee @relation("EmployeeReviews", fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewerId   String
+  reviewer     User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  revieweeId   String
+  reviewee     User     @relation("Reviewee", fields: [revieweeId], references: [id])
+  period       String
+  score        Int?
+  strengths    String?  @db.Text
+  improvements String?  @db.Text
+  goals        String?  @db.Text
+  isAnonymous  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("performance_reviews")
+}
+
+model OnboardingTask {
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  title       String
+  description String?   @db.Text
+  dueDate     DateTime?
+  completedAt DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@map("onboarding_tasks")
+}
+
+model EmployeeDocument {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  name       String
+  type       String
+  fileUrl    String
+  fileSize   Int?
+  mimeType   String?
+  createdAt  DateTime @default(now())
+
+  @@map("employee_documents")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: CRM — CLIENTES
+// ─────────────────────────────────────────────
+
+model Client {
+  id          String    @id @default(cuid())
+  userId      String?   @unique
+  user        User?     @relation(fields: [userId], references: [id])
+  name        String
+  company     String?
+  taxId       String?
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  country     String?   @default("Argentina")
+  website     String?
+  linkedin    String?
+  instagram   String?
+  twitter     String?
+  industry    String?
+  companySize String?
+  stage       CRMStage  @default(LEAD)
+  score       LeadScore @default(MEDIUM)
+  tags        String[]
+  notes       String?   @db.Text
+  avatarUrl   String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  interactions  CRMInteraction[]
+  projects      Project[]
+  invoices      Invoice[]
+  clientDocs    Document[]       @relation("ClientDocuments")
+  followUps     FollowUp[]
+  customValues  CustomFieldValue[]
+
+  @@map("clients")
+}
+
+model CRMInteraction {
+  id          String          @id @default(cuid())
+  clientId    String
+  client      Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  type        InteractionType
+  title       String
+  description String?         @db.Text
+  date        DateTime
+  duration    Int?
+  createdById String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("crm_interactions")
+}
+
+model FollowUp {
+  id          String    @id @default(cuid())
+  clientId    String
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title       String
+  description String?   @db.Text
+  dueDate     DateTime
+  isDone      Boolean   @default(false)
+  doneAt      DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+
+  @@map("follow_ups")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: PROYECTOS
+// ─────────────────────────────────────────────
+
+model Project {
+  id               String          @id @default(cuid())
+  name             String
+  slug             String          @unique
+  description      String?         @db.Text
+  clientId         String?
+  client           Client?         @relation(fields: [clientId], references: [id])
+  creatorId        String
+  creator          User            @relation("ProjectCreator", fields: [creatorId], references: [id])
+  status           ProjectStatus   @default(PLANNING)
+  priority         ProjectPriority @default(MEDIUM)
+  startDate        DateTime?
+  endDate          DateTime?
+  budget           Decimal?        @db.Decimal(14, 2)
+  budgetCurrency   Currency        @default(ARS)
+  isPublicToClient Boolean         @default(false)
+  coverColor       String?         @default("#6366f1")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  members     ProjectMember[]
+  tasks       Task[]
+  sprints     Sprint[]
+  columns     KanbanColumn[]
+  projectDocs Document[]      @relation("ProjectDocuments")
+  timeEntries TimeEntry[]
+  invoices    Invoice[]
+  milestones  Milestone[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  role       String?
+  joinedAt   DateTime @default(now())
+
+  @@unique([projectId, employeeId])
+  @@map("project_members")
+}
+
+model KanbanColumn {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  order     Int      @default(0)
+  color     String?
+  wipLimit  Int?
+  createdAt DateTime @default(now())
+
+  tasks Task[]
+
+  @@map("kanban_columns")
+}
+
+model Sprint {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  goal        String?   @db.Text
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tasks Task[]
+
+  @@map("sprints")
+}
+
+model Task {
+  id               String        @id @default(cuid())
+  projectId        String
+  project          Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  columnId         String?
+  column           KanbanColumn? @relation(fields: [columnId], references: [id])
+  sprintId         String?
+  sprint           Sprint?       @relation(fields: [sprintId], references: [id])
+  parentId         String?
+  parent           Task?         @relation("SubTasks", fields: [parentId], references: [id])
+  subtasks         Task[]        @relation("SubTasks")
+  title            String
+  description      String?       @db.Text
+  status           TaskStatus    @default(TODO)
+  priority         TaskPriority  @default(MEDIUM)
+  estimatedHours   Decimal?      @db.Decimal(6, 2)
+  actualHours      Decimal?      @db.Decimal(6, 2)
+  startDate        DateTime?
+  dueDate          DateTime?
+  completedAt      DateTime?
+  order            Int           @default(0)
+  isPublicToClient Boolean       @default(false)
+  createdById      String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  assignments    TaskAssignment[]
+  labels         TaskLabel[]
+  comments       TaskComment[]
+  attachments    TaskAttachment[]
+  checklistItems TaskChecklistItem[]
+  timeEntries    TimeEntry[]
+  blockedBy      TaskDependency[] @relation("BlockedTask")
+  blocks         TaskDependency[] @relation("BlockerTask")
+
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  id         String   @id @default(cuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@unique([taskId, userId])
+  @@map("task_assignments")
+}
+
+model Label {
+  id        String  @id @default(cuid())
+  name      String
+  color     String  @default("#6366f1")
+  projectId String?
+  isGlobal  Boolean @default(false)
+
+  tasks TaskLabel[]
+
+  @@map("labels")
+}
+
+model TaskLabel {
+  taskId  String
+  task    Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  labelId String
+  label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, labelId])
+  @@map("task_labels")
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String   @db.Text
+  isEdited  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("task_comments")
+}
+
+model TaskAttachment {
+  id           String   @id @default(cuid())
+  taskId       String
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  name         String
+  fileUrl      String
+  fileSize     Int?
+  mimeType     String?
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  @@map("task_attachments")
+}
+
+model TaskChecklistItem {
+  id          String    @id @default(cuid())
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title       String
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@map("task_checklist_items")
+}
+
+model TaskDependency {
+  id        String @id @default(cuid())
+  blockedId String
+  blocked   Task   @relation("BlockedTask", fields: [blockedId], references: [id], onDelete: Cascade)
+  blockerId String
+  blocker   Task   @relation("BlockerTask", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  @@unique([blockedId, blockerId])
+  @@map("task_dependencies")
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  description String?   @db.Text
+  dueDate     DateTime
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("milestones")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: TIME TRACKING
+// ─────────────────────────────────────────────
+
+model TimeEntry {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id])
+  taskId      String?
+  task        Task?     @relation(fields: [taskId], references: [id])
+  description String?
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?
+  isBillable  Boolean   @default(true)
+  hourlyRate  Decimal?  @db.Decimal(10, 2)
+  currency    Currency  @default(ARS)
+  isRunning   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  invoiceItems InvoiceItem[]
+
+  @@map("time_entries")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: FINANZAS Y FACTURACIÓN
+// ─────────────────────────────────────────────
+
+model Invoice {
+  id              String        @id @default(cuid())
+  number          String        @unique
+  clientId        String
+  client          Client        @relation(fields: [clientId], references: [id])
+  projectId       String?
+  project         Project?      @relation(fields: [projectId], references: [id])
+  status          InvoiceStatus @default(DRAFT)
+  currency        Currency      @default(ARS)
+  subtotal        Decimal       @db.Decimal(14, 2)
+  taxRate         Decimal       @db.Decimal(5, 2) @default(21)
+  taxAmount       Decimal       @db.Decimal(14, 2)
+  total           Decimal       @db.Decimal(14, 2)
+  notes           String?       @db.Text
+  terms           String?       @db.Text
+  issueDate       DateTime      @db.Date
+  dueDate         DateTime      @db.Date
+  paidDate        DateTime?     @db.Date
+  isRecurring     Boolean       @default(false)
+  recurringPeriod String?
+  sentAt          DateTime?
+  reminderSentAt  DateTime?
+  createdById     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  items InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String     @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  timeEntryId String?
+  timeEntry   TimeEntry? @relation(fields: [timeEntryId], references: [id])
+  description String
+  quantity    Decimal    @db.Decimal(10, 2)
+  unitPrice   Decimal    @db.Decimal(14, 2)
+  total       Decimal    @db.Decimal(14, 2)
+  order       Int        @default(0)
+
+  @@map("invoice_items")
+}
+
+model Expense {
+  id              String          @id @default(cuid())
+  category        ExpenseCategory
+  description     String
+  amount          Decimal         @db.Decimal(14, 2)
+  currency        Currency        @default(ARS)
+  date            DateTime        @db.Date
+  receiptUrl      String?
+  projectId       String?
+  isRecurring     Boolean         @default(false)
+  recurringPeriod String?
+  createdById     String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("expenses")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: DOCUMENTOS
+// ─────────────────────────────────────────────
+
+model Document {
+  id          String          @id @default(cuid())
+  name        String
+  description String?         @db.Text
+  type        DocumentType    @default(OTHER)
+  fileUrl     String?
+  fileSize    Int?
+  mimeType    String?
+  folderId    String?
+  folder      DocumentFolder? @relation(fields: [folderId], references: [id])
+  projectId   String?
+  project     Project?        @relation("ProjectDocuments", fields: [projectId], references: [id])
+  clientId    String?
+  client      Client?         @relation("ClientDocuments", fields: [clientId], references: [id])
+  uploaderId  String
+  uploader    User            @relation("DocumentUploader", fields: [uploaderId], references: [id])
+  isPublic    Boolean         @default(false)
+  isTemplate  Boolean         @default(false)
+  isDeleted   Boolean         @default(false)
+  deletedAt   DateTime?
+  version     Int             @default(1)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  versions DocumentVersion[]
+  shares   DocumentShare[]
+
+  @@map("documents")
+}
+
+model DocumentFolder {
+  id        String           @id @default(cuid())
+  name      String
+  parentId  String?
+  parent    DocumentFolder?  @relation("FolderTree", fields: [parentId], references: [id])
+  children  DocumentFolder[] @relation("FolderTree")
+  documents Document[]
+  isPublic  Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@map("document_folders")
+}
+
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version     Int
+  fileUrl     String
+  fileSize    Int?
+  changedById String?
+  changeNote  String?
+  createdAt   DateTime @default(now())
+
+  @@map("document_versions")
+}
+
+model DocumentShare {
+  id           String    @id @default(cuid())
+  documentId   String
+  document     Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sharedWithId String?
+  email        String?
+  canEdit      Boolean   @default(false)
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@map("document_shares")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: CHAT / COMUNICACIÓN
+// ─────────────────────────────────────────────
+
+model Channel {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  projectId   String?
+  isPrivate   Boolean  @default(false)
+  isDirect    Boolean  @default(false)
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  members  ChannelMember[]
+  messages Message[]
+
+  @@map("channels")
+}
+
+model ChannelMember {
+  channelId  String
+  channel    Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId     String
+  lastReadAt DateTime?
+  joinedAt   DateTime @default(now())
+
+  @@id([channelId, userId])
+  @@map("channel_members")
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  channelId String
+  channel   Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User        @relation(fields: [senderId], references: [id])
+  content   String      @db.Text
+  type      MessageType @default(TEXT)
+  fileUrl   String?
+  fileName  String?
+  fileSize  Int?
+  isEdited  Boolean     @default(false)
+  isDeleted Boolean     @default(false)
+  replyToId String?
+  replyTo   Message?    @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies   Message[]   @relation("MessageReplies")
+  mentions  String[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("messages")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: CALENDARIO
+// ─────────────────────────────────────────────
+
+model CalendarEvent {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?   @db.Text
+  type          EventType @default(OTHER)
+  startAt       DateTime
+  endAt         DateTime
+  isAllDay      Boolean   @default(false)
+  location      String?
+  color         String?
+  projectId     String?
+  clientId      String?
+  isPublic      Boolean   @default(false)
+  googleEventId String?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  attendees CalendarEventAttendee[]
+
+  @@map("calendar_events")
+}
+
+model CalendarEventAttendee {
+  eventId String
+  event   CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status  String        @default("PENDING")
+
+  @@id([eventId, userId])
+  @@map("calendar_event_attendees")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: OKRs
+// ─────────────────────────────────────────────
+
+model OKR {
+  id          String       @id @default(cuid())
+  title       String
+  description String?      @db.Text
+  ownerId     String
+  owner       User         @relation(fields: [ownerId], references: [id])
+  parentId    String?
+  parent      OKR?         @relation("OKRAlignment", fields: [parentId], references: [id])
+  children    OKR[]        @relation("OKRAlignment")
+  status      OKRStatus    @default(ACTIVE)
+  frequency   OKRFrequency @default(QUARTERLY)
+  period      String
+  startDate   DateTime     @db.Date
+  endDate     DateTime     @db.Date
+  progress    Decimal      @db.Decimal(5, 2) @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  keyResults KeyResult[]
+  checkIns   OKRCheckIn[]
+
+  @@map("okrs")
+}
+
+model KeyResult {
+  id           String   @id @default(cuid())
+  okrId        String
+  okr          OKR      @relation(fields: [okrId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  targetValue  Decimal  @db.Decimal(14, 2)
+  currentValue Decimal  @db.Decimal(14, 2) @default(0)
+  unit         String?
+  progress     Decimal  @db.Decimal(5, 2) @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("key_results")
+}
+
+model OKRCheckIn {
+  id        String   @id @default(cuid())
+  okrId     String
+  okr       OKR      @relation(fields: [okrId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  progress  Decimal  @db.Decimal(5, 2)
+  notes     String?  @db.Text
+  blockers  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("okr_check_ins")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: NOTIFICACIONES
+// ─────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?
+  link      String?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  @@map("notifications")
+}
+
+model NotificationSetting {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailEnabled  Boolean @default(true)
+  pushEnabled   Boolean @default(true)
+  taskAssigned  Boolean @default(true)
+  taskDue       Boolean @default(true)
+  invoiceDue    Boolean @default(true)
+  projectUpdate Boolean @default(true)
+  mention       Boolean @default(true)
+  newMessage    Boolean @default(true)
+
+  @@map("notification_settings")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: AUDIT LOG / SEGURIDAD
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id])
+  action    AuditAction
+  entity    String
+  entityId  String?
+  oldValues Json?
+  newValues Json?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  @@map("audit_logs")
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  type      String
+  userId    String?
+  email     String?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@map("security_logs")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: INTEGRACIONES
+// ─────────────────────────────────────────────
+
+model Integration {
+  id          String          @id @default(cuid())
+  type        IntegrationType
+  name        String
+  config      Json
+  isActive    Boolean         @default(true)
+  projectId   String?
+  createdById String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  webhooks Webhook[]
+
+  @@map("integrations")
+}
+
+model Webhook {
+  id              String       @id @default(cuid())
+  integrationId   String?
+  integration     Integration? @relation(fields: [integrationId], references: [id])
+  name            String
+  url             String
+  secret          String?
+  events          String[]
+  isActive        Boolean      @default(true)
+  lastTriggeredAt DateTime?
+  createdAt       DateTime     @default(now())
+
+  deliveries WebhookDelivery[]
+
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id          String   @id @default(cuid())
+  webhookId   String
+  webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event       String
+  payload     Json
+  statusCode  Int?
+  response    String?  @db.Text
+  success     Boolean  @default(false)
+  deliveredAt DateTime @default(now())
+
+  @@map("webhook_deliveries")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: CONFIGURACIÓN GENERAL
+// ─────────────────────────────────────────────
+
+model CompanySettings {
+  id                  String   @id @default(cuid())
+  name                String   @default("MGB")
+  legalName           String?
+  taxId               String?
+  email               String?
+  phone               String?
+  address             String?
+  city                String?
+  country             String?  @default("Argentina")
+  website             String?
+  logoUrl             String?
+  faviconUrl          String?
+  primaryColor        String?  @default("#6366f1")
+  defaultCurrency     Currency @default(ARS)
+  invoicePrefix       String   @default("FAC")
+  invoiceNextNumber   Int      @default(1)
+  smtpHost            String?
+  smtpPort            Int?
+  smtpUser            String?
+  smtpPassword        String?
+  smtpFrom            String?
+  updatedAt           DateTime @updatedAt
+
+  @@map("company_settings")
+}
+
+model CustomField {
+  id         String   @id @default(cuid())
+  name       String
+  key        String   @unique
+  type       String
+  entity     String
+  options    String[]
+  isRequired Boolean  @default(false)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  values CustomFieldValue[]
+
+  @@map("custom_fields")
+}
+
+model CustomFieldValue {
+  id       String      @id @default(cuid())
+  fieldId  String
+  field    CustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  entityId String
+  value    String?     @db.Text
+  userId   String?
+  user     User?       @relation(fields: [userId], references: [id])
+  clientId String?
+  client   Client?     @relation(fields: [clientId], references: [id])
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([fieldId, entityId])
+  @@map("custom_field_values")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO: PROJECT TEMPLATES
+// ─────────────────────────────────────────────
+
+model ProjectTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  columns     Json
+  tasks       Json
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@map("project_templates")
+}
