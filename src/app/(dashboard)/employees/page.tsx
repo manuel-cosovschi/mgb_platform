@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Plus, UserCircle, Briefcase, Calendar } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Search, Plus, UserCircle, Briefcase, Calendar, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, initials } from "@/lib/utils";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const employmentTypeLabels: Record<string, string> = {
   FULL_TIME: "Tiempo completo",
@@ -22,8 +24,23 @@ const employmentTypeLabels: Record<string, string> = {
 
 export default function EmployeesPage() {
   const [search, setSearch] = useState("");
+  const { data: session } = useSession();
+  const isSocio = session?.user?.role === "SOCIO";
 
-  const { data: employees = [], isLoading } = useQuery({
+  async function handleDeleteEmployee(e: React.MouseEvent, empId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("¿Eliminar este empleado? Se eliminará su cuenta y todos sus datos.")) return;
+    const res = await fetch(`/api/employees/${empId}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Empleado eliminado");
+      refetch();
+    } else {
+      toast.error("Error al eliminar el empleado");
+    }
+  }
+
+  const { data: employees = [], isLoading, refetch } = useQuery({
     queryKey: ["employees", search],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -71,9 +88,21 @@ export default function EmployeesPage() {
                             <p className="text-xs text-muted-foreground">{emp.department}</p>
                           )}
                         </div>
-                        <Badge variant={emp.user.isActive ? "success" : "secondary"}>
-                          {emp.user.isActive ? "Activo" : "Inactivo"}
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                          <Badge variant={emp.user.isActive ? "success" : "secondary"}>
+                            {emp.user.isActive ? "Activo" : "Inactivo"}
+                          </Badge>
+                          {isSocio && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => handleDeleteEmployee(e, emp.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
                       <div className="space-y-1.5 text-xs text-muted-foreground">

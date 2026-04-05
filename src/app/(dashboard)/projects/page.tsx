@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, FolderKanban, Calendar, Clock } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Plus, Search, FolderKanban, Calendar, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, initials, formatCurrency } from "@/lib/utils";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
+import { toast } from "sonner";
 import Link from "next/link";
 
 const statusConfig: Record<string, { label: string; variant: string; dot: string }> = {
@@ -33,6 +35,8 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
 export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [openCreate, setOpenCreate] = useState(false);
+  const { data: session } = useSession();
+  const isSocio = session?.user?.role === "SOCIO";
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["projects", search],
@@ -46,6 +50,19 @@ export default function ProjectsPage() {
   });
 
   const projects = data?.data ?? [];
+
+  async function handleDeleteProject(e: React.MouseEvent, projectId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("¿Eliminar este proyecto? Esta acción no se puede deshacer.")) return;
+    const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Proyecto eliminado");
+      refetch();
+    } else {
+      toast.error("Error al eliminar el proyecto");
+    }
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -104,7 +121,19 @@ export default function ProjectsPage() {
                               </p>
                             )}
                           </div>
-                          <Badge variant={status.variant as any}>{status.label}</Badge>
+                          <div className="flex items-center gap-1">
+                            <Badge variant={status.variant as any}>{status.label}</Badge>
+                            {isSocio && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => handleDeleteProject(e, project.id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
 
                         {/* Progress */}
