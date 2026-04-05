@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { CommandPalette, useCommandPalette } from "@/components/search/command-palette";
 
 interface HeaderProps {
   title?: string;
@@ -16,6 +17,7 @@ interface HeaderProps {
 }
 
 export function Header({ title, breadcrumbs }: HeaderProps) {
+  const { open, setOpen } = useCommandPalette();
   const { data: notifCount = 0 } = useQuery<number>({
     queryKey: ["notifications-unread-count"],
     queryFn: async () => {
@@ -56,13 +58,12 @@ export function Header({ title, breadcrumbs }: HeaderProps) {
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar... (⌘K)"
-          className="pl-8 h-9 text-sm"
+          className="pl-8 h-9 text-sm cursor-pointer"
           readOnly
-          onClick={() => {
-            // TODO: open command palette
-          }}
+          onClick={() => setOpen(true)}
         />
       </div>
+      <CommandPalette open={open} onOpenChange={setOpen} />
 
       {/* Notifications */}
       <DropdownMenu>

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, MoreHorizontal } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { initials, formatDate } from "@/lib/utils";
+import { TaskDetailModal } from "./task-detail-modal";
 
 interface Column {
   id: string;
@@ -45,6 +45,7 @@ const priorityColors: Record<string, string> = {
 export function KanbanBoard({ columns, tasks, isLoading, projectId, onUpdate }: Props) {
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const tasksByColumn = columns.reduce((acc, col) => {
     acc[col.id] = tasks.filter((t) => t.columnId === col.id);
@@ -117,7 +118,7 @@ export function KanbanBoard({ columns, tasks, isLoading, projectId, onUpdate }: 
                 <div
                   key={task.id}
                   className={`rounded-lg border bg-card p-3 cursor-pointer hover:shadow-md transition-all border-l-2 ${priorityColors[task.priority] ?? "border-l-slate-400"}`}
-                  onClick={() => {/* TODO: open task detail */}}
+                  onClick={() => setSelectedTaskId(task.id)}
                 >
                   <p className="text-sm font-medium mb-2">{task.title}</p>
 
@@ -202,6 +203,12 @@ export function KanbanBoard({ columns, tasks, isLoading, projectId, onUpdate }: 
           </div>
         );
       })}
+
+      <TaskDetailModal
+        taskId={selectedTaskId}
+        onClose={() => setSelectedTaskId(null)}
+        onUpdate={onUpdate}
+      />
     </div>
   );
 }
