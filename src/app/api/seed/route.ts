@@ -83,8 +83,8 @@ export async function GET(req: Request) {
     ]);
 
     await Promise.all([
-      db.employee.create({ data: { userId: sofia.id, department: "Frontend", hireDate: new Date("2023-03-01") } }),
-      db.employee.create({ data: { userId: lucas.id, department: "Backend", hireDate: new Date("2023-06-01") } }),
+      db.employee.create({ data: { userId: sofia.id, jobTitle: "Frontend Developer", department: "Frontend", startDate: new Date("2023-03-01") } }),
+      db.employee.create({ data: { userId: lucas.id, jobTitle: "Backend Developer", department: "Backend", startDate: new Date("2023-06-01") } }),
     ]);
 
     // Clients
