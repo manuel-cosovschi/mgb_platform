@@ -6,7 +6,13 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+  const connectionString = process.env.DATABASE_URL!;
+  // Neon and other cloud providers require SSL
+  const ssl = connectionString.includes("sslmode=require") || connectionString.includes("neon.tech")
+    ? { rejectUnauthorized: false }
+    : undefined;
+
+  const adapter = new PrismaPg({ connectionString, ssl });
   return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
