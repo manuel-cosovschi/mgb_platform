@@ -57,7 +57,7 @@ export default function NewExpensePage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header breadcrumbs={[{ label: "Finanzas", href: "/finance" }, { label: "Nuevo gasto" }]} />
-      <div className="flex-1 p-6 max-w-lg">
+      <div className="flex-1 p-4 sm:p-6 max-w-lg">
         <Card>
           <CardHeader><CardTitle>Registrar gasto</CardTitle></CardHeader>
           <CardContent>
@@ -75,7 +75,7 @@ export default function NewExpensePage() {
                 {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Monto *</Label>
                   <Input type="number" step="0.01" placeholder="0.00" {...register("amount", { valueAsNumber: true })} />

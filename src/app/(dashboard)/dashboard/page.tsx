@@ -22,7 +22,7 @@ export default async function DashboardPage() {
       <Header
         breadcrumbs={[{ label: "Dashboard" }]}
       />
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 space-y-6">
         {/* Saludo */}
         <div>
           <h2 className="text-xl font-semibold">

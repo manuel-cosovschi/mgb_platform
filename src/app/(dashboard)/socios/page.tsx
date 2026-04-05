@@ -60,7 +60,7 @@ export default function SociosPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header breadcrumbs={[{ label: "Socios" }]} />
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 space-y-6">
 
         {/* Partner cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

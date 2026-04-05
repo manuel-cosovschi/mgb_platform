@@ -9,9 +9,10 @@ import {
   UserCircle, FileText, MessageSquare, Calendar,
   Target, BarChart3, Globe, Settings, Timer,
   Building2, ChevronLeft, ChevronRight, LogOut, Moon, Sun,
-  Bell, Search,
+  X,
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
+import { useSidebar } from "./sidebar-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ export function Sidebar({ className }: SidebarProps) {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
+  const { mobileOpen, setMobileOpen } = useSidebar();
 
   const userRole = session?.user?.role ?? "EMPLEADO";
 
@@ -58,7 +60,11 @@ export function Sidebar({ className }: SidebarProps) {
     <aside
       className={cn(
         "relative flex flex-col border-r bg-card transition-all duration-300",
-        collapsed ? "w-16" : "w-60",
+        // Desktop: static sidebar
+        "hidden md:flex",
+        collapsed ? "md:w-16" : "md:w-60",
+        // Mobile: fixed overlay drawer
+        mobileOpen && "flex fixed inset-y-0 left-0 z-50 w-72 md:relative md:w-auto",
         className
       )}
     >
@@ -68,10 +74,21 @@ export function Sidebar({ className }: SidebarProps) {
           M
         </div>
         {!collapsed && (
-          <div>
+          <div className="flex-1">
             <p className="font-semibold text-sm">MGB Hub</p>
             <p className="text-xs text-muted-foreground">Software Factory</p>
           </div>
+        )}
+        {/* Mobile close button */}
+        {mobileOpen && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden h-8 w-8"
+            onClick={() => setMobileOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         )}
       </div>
 
@@ -84,6 +101,7 @@ export function Sidebar({ className }: SidebarProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={() => setMobileOpen(false)}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                     isActive

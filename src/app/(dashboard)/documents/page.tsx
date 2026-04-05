@@ -84,7 +84,7 @@ export default function DocumentsPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header breadcrumbs={[{ label: "Documentos" }]} />
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-4 sm:p-6">
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1 max-w-sm">

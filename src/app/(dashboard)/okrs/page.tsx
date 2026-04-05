@@ -92,7 +92,7 @@ export default function OKRsPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header breadcrumbs={[{ label: "OKRs" }]} />
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-sm">Objetivos y resultados clave del equipo</p>
           <Button onClick={() => setCreateOpen(true)}>

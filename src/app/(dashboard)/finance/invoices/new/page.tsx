@@ -96,7 +96,7 @@ export default function NewInvoicePage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header breadcrumbs={[{ label: "Finanzas", href: "/finance" }, { label: "Nueva factura" }]} />
-      <div className="flex-1 p-6 max-w-4xl">
+      <div className="flex-1 p-4 sm:p-6 max-w-4xl">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main form */}
@@ -104,7 +104,7 @@ export default function NewInvoicePage() {
               <Card>
                 <CardHeader><CardTitle className="text-base">Datos del cliente</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label>Cliente *</Label>
                       <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...register("clientId")}>

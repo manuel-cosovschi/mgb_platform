@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { CommandPalette, useCommandPalette } from "@/components/search/command-palette";
+import { useSidebar } from "./sidebar-context";
 
 interface HeaderProps {
   title?: string;
@@ -18,6 +19,7 @@ interface HeaderProps {
 
 export function Header({ title, breadcrumbs }: HeaderProps) {
   const { open, setOpen } = useCommandPalette();
+  const { setMobileOpen } = useSidebar();
   const { data: notifCount = 0 } = useQuery<number>({
     queryKey: ["notifications-unread-count"],
     queryFn: async () => {
@@ -30,7 +32,17 @@ export function Header({ title, breadcrumbs }: HeaderProps) {
   });
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-card px-6">
+    <header className="flex h-14 items-center gap-2 sm:gap-4 border-b bg-card px-3 sm:px-6">
+      {/* Mobile hamburger */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden h-8 w-8 shrink-0"
+        onClick={() => setMobileOpen(true)}
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
       {/* Breadcrumbs / Title */}
       <div className="flex-1 min-w-0">
         {breadcrumbs ? (

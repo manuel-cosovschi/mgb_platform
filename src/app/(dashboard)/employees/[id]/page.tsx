@@ -45,7 +45,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
           { label: employee.user.name },
         ]}
       />
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 space-y-6">
         {/* Profile header */}
         <Card>
           <CardContent className="p-6">
