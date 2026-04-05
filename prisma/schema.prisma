@@ -235,6 +235,7 @@ model User {
   calendarEvents       CalendarEventAttendee[]
   documents            Document[]            @relation("DocumentUploader")
   createdProjects      Project[]             @relation("ProjectCreator")
+  projectApprovals     ProjectApproval[]     @relation("ProjectApprovalRequester")
   okrOwner             OKR[]
   checkIns             OKRCheckIn[]
   performanceReviews   PerformanceReview[]   @relation("Reviewer")
@@ -569,8 +570,23 @@ model Project {
   timeEntries TimeEntry[]
   invoices    Invoice[]
   milestones  Milestone[]
+  approvals   ProjectApproval[]
 
   @@map("projects")
+}
+
+model ProjectApproval {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  action      String   // "DELETE" | "PAUSE"
+  requestedBy String
+  requester   User     @relation("ProjectApprovalRequester", fields: [requestedBy], references: [id])
+  approvedBy  String[] // user IDs of socios who approved
+  status      String   @default("PENDING") // "PENDING" | "EXECUTED" | "CANCELLED"
+  createdAt   DateTime @default(now())
+
+  @@map("project_approvals")
 }
 
 model ProjectMember {

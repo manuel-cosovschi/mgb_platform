@@ -50,6 +50,9 @@ export function Sidebar({ className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const { mobileOpen, setMobileOpen } = useSidebar();
 
+  // On mobile, always show full (non-collapsed) sidebar
+  const isCollapsed = collapsed && !mobileOpen;
+
   const userRole = session?.user?.role ?? "EMPLEADO";
 
   const visibleItems = navItems.filter((item) =>
@@ -62,18 +65,18 @@ export function Sidebar({ className }: SidebarProps) {
         "relative flex flex-col border-r bg-card transition-all duration-300",
         // Desktop: static sidebar
         "hidden md:flex",
-        collapsed ? "md:w-16" : "md:w-60",
-        // Mobile: fixed overlay drawer
-        mobileOpen && "flex fixed inset-y-0 left-0 z-50 w-72 md:relative md:w-auto",
+        isCollapsed ? "md:w-16" : "md:w-60",
+        // Mobile: fixed overlay drawer, always full-width, solid bg, high z-index
+        mobileOpen && "!flex fixed inset-y-0 left-0 z-50 w-72 shadow-2xl bg-card",
         className
       )}
     >
       {/* Logo */}
-      <div className={cn("flex items-center border-b p-4", collapsed ? "justify-center" : "gap-3")}>
+      <div className={cn("flex items-center border-b p-4", isCollapsed ? "justify-center" : "gap-3")}>
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
           M
         </div>
-        {!collapsed && (
+        {!isCollapsed && (
           <div className="flex-1">
             <p className="font-semibold text-sm">MGB Hub</p>
             <p className="text-xs text-muted-foreground">Software Factory</p>
@@ -107,12 +110,12 @@ export function Sidebar({ className }: SidebarProps) {
                     isActive
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                    collapsed && "justify-center px-2"
+                    isCollapsed && "justify-center px-2"
                   )}
-                  title={collapsed ? item.title : undefined}
+                  title={isCollapsed ? item.title : undefined}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{item.title}</span>}
+                  {!isCollapsed && <span>{item.title}</span>}
                 </Link>
               </li>
             );
@@ -126,11 +129,11 @@ export function Sidebar({ className }: SidebarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={cn("w-full", collapsed ? "justify-center px-2" : "justify-start gap-3")}
+          className={cn("w-full", isCollapsed ? "justify-center px-2" : "justify-start gap-3")}
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         >
           {theme === "dark" ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
-          {!collapsed && <span className="text-sm">Cambiar tema</span>}
+          {!isCollapsed && <span className="text-sm">Cambiar tema</span>}
         </Button>
 
         {/* User menu */}
@@ -140,7 +143,7 @@ export function Sidebar({ className }: SidebarProps) {
               variant="ghost"
               className={cn(
                 "w-full h-auto py-2",
-                collapsed ? "justify-center px-2" : "justify-start gap-3"
+                isCollapsed ? "justify-center px-2" : "justify-start gap-3"
               )}
             >
               <Avatar className="h-7 w-7 shrink-0">
@@ -149,7 +152,7 @@ export function Sidebar({ className }: SidebarProps) {
                   {initials(session?.user?.name ?? "U")}
                 </AvatarFallback>
               </Avatar>
-              {!collapsed && (
+              {!isCollapsed && (
                 <div className="min-w-0 text-left">
                   <p className="text-sm font-medium truncate">{session?.user?.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{session?.user?.role}</p>
@@ -183,14 +186,14 @@ export function Sidebar({ className }: SidebarProps) {
         </DropdownMenu>
       </div>
 
-      {/* Collapse button */}
+      {/* Collapse button — desktop only */}
       <Button
         variant="ghost"
         size="icon"
-        className="absolute -right-3 top-16 h-6 w-6 rounded-full border bg-background shadow-sm"
+        className="hidden md:flex absolute -right-3 top-16 h-6 w-6 rounded-full border bg-background shadow-sm"
         onClick={() => setCollapsed(!collapsed)}
       >
-        {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+        {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
       </Button>
     </aside>
   );
