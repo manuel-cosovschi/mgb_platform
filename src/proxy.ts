@@ -9,7 +9,6 @@ export const proxy = auth((req) => {
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/seed") ||
     pathname === "/"
   ) {
     return NextResponse.next();
