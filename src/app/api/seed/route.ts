@@ -57,9 +57,9 @@ export async function GET(req: Request) {
     ]);
 
     await Promise.all([
-      db.partner.create({ data: { userId: manuel.id, equityPercentage: 33.33, role: "CEO" } }),
-      db.partner.create({ data: { userId: gabriel.id, equityPercentage: 33.33, role: "CTO" } }),
-      db.partner.create({ data: { userId: bruno.id, equityPercentage: 33.34, role: "COO" } }),
+      db.partner.create({ data: { userId: manuel.id, equityPercentage: 33.33, title: "CEO" } }),
+      db.partner.create({ data: { userId: gabriel.id, equityPercentage: 33.33, title: "CTO" } }),
+      db.partner.create({ data: { userId: bruno.id, equityPercentage: 33.34, title: "COO" } }),
     ]);
 
     // Employees
