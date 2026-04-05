@@ -161,13 +161,13 @@ export default function PortalPage() {
                       </Badge>
                     </div>
                     <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                      {p.progress}%
+                      {p.completionRate}%
                     </span>
                   </div>
-                  <Progress value={p.progress} className="h-1.5" />
-                  {p.dueDate && (
+                  <Progress value={p.completionRate} className="h-1.5" />
+                  {p.endDate && (
                     <p className="text-xs text-muted-foreground">
-                      Entrega: {formatDate(p.dueDate)}
+                      Entrega: {formatDate(p.endDate)}
                     </p>
                   )}
                 </div>

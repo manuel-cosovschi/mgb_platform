@@ -11,12 +11,11 @@ export async function GET() {
   if (!settings) {
     settings = await db.companySettings.create({
       data: {
-        companyName: "MGB Software Factory",
+        name: "MGB Software Factory",
         email: "info@mgbsoftware.com",
         invoicePrefix: "FAC",
         invoiceNextNumber: 1,
-        taxRate: 21,
-        currency: "EUR",
+        defaultCurrency: "ARS",
       },
     });
   }
@@ -32,8 +31,8 @@ export async function PATCH(req: Request) {
 
   const body = await req.json();
   const {
-    companyName, email, phone, address, website,
-    invoicePrefix, taxRate, currency, logoUrl,
+    name, email, phone, address, website, city, country,
+    invoicePrefix, defaultCurrency, logoUrl,
   } = body;
 
   const settings = await db.companySettings.findFirst();
@@ -41,13 +40,11 @@ export async function PATCH(req: Request) {
   if (!settings) {
     const newSettings = await db.companySettings.create({
       data: {
-        companyName: companyName || "MGB Software Factory",
-        email: email || "",
-        phone, address, website,
+        name: name || "MGB Software Factory",
+        email, phone, address, website, city, country,
         invoicePrefix: invoicePrefix || "FAC",
         invoiceNextNumber: 1,
-        taxRate: taxRate ? parseFloat(taxRate) : 21,
-        currency: currency || "EUR",
+        defaultCurrency: defaultCurrency || "ARS",
         logoUrl,
       },
     });
@@ -57,14 +54,15 @@ export async function PATCH(req: Request) {
   const updated = await db.companySettings.update({
     where: { id: settings.id },
     data: {
-      ...(companyName !== undefined && { companyName }),
+      ...(name !== undefined && { name }),
       ...(email !== undefined && { email }),
       ...(phone !== undefined && { phone }),
       ...(address !== undefined && { address }),
       ...(website !== undefined && { website }),
+      ...(city !== undefined && { city }),
+      ...(country !== undefined && { country }),
       ...(invoicePrefix !== undefined && { invoicePrefix }),
-      ...(taxRate !== undefined && { taxRate: parseFloat(taxRate) }),
-      ...(currency !== undefined && { currency }),
+      ...(defaultCurrency !== undefined && { defaultCurrency }),
       ...(logoUrl !== undefined && { logoUrl }),
     },
   });

@@ -45,6 +45,12 @@ export default async function ProjectPage({ params }: Props) {
     notFound();
   }
 
+  // Serialize Decimal fields for client components
+  const serializedProject = {
+    ...project,
+    budget: project.budget ? Number(project.budget) : null,
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <Header
@@ -53,7 +59,7 @@ export default async function ProjectPage({ params }: Props) {
           { label: project.name },
         ]}
       />
-      <ProjectBoard project={project} />
+      <ProjectBoard project={serializedProject} />
     </div>
   );
 }

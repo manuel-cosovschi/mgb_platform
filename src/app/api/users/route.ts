@@ -30,8 +30,8 @@ export async function GET(req: Request) {
       role: true,
       image: true,
       createdAt: true,
-      employee: { select: { department: true, position: true } },
-      client: { select: { company: true } },
+      employeeProfile: { select: { department: true } },
+      clientProfile: { select: { company: true } },
     },
     orderBy: { createdAt: "desc" },
   });

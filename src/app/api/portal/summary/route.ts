@@ -22,11 +22,11 @@ export async function GET() {
     db.project.findMany({
       where: {
         clientId: client.id,
-        status: { in: ["ACTIVE", "IN_REVIEW"] },
+        status: { in: ["ACTIVE", "ON_HOLD"] },
       },
       select: {
-        id: true, name: true, slug: true, status: true, progress: true,
-        dueDate: true, description: true,
+        id: true, name: true, slug: true, status: true,
+        endDate: true, description: true,
         _count: { select: { tasks: true } },
       },
       orderBy: { updatedAt: "desc" },
@@ -35,9 +35,9 @@ export async function GET() {
     db.invoice.findMany({
       where: {
         clientId: client.id,
-        status: { in: ["PENDING", "OVERDUE"] },
+        status: { in: ["SENT", "OVERDUE"] },
       },
-      select: { id: true, number: true, total: true, status: true, dueDate: true, issuedAt: true },
+      select: { id: true, number: true, total: true, status: true, dueDate: true, issueDate: true },
       orderBy: { dueDate: "asc" },
       take: 5,
     }),

@@ -1,7 +1,10 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("🌱 Iniciando seed...");
@@ -174,11 +177,11 @@ async function main() {
   // ──────────────────────────────────────────
   // CLIENTES
   // ──────────────────────────────────────────
-  const clients = await Promise.all([
-    prisma.client.upsert({
-      where: { email: "contacto@tecnoar.com" },
-      update: {},
-      create: {
+  await prisma.client.createMany({
+    skipDuplicates: true,
+    data: [
+      {
+        id: "client-tecnoar",
         name: "Carlos Rodríguez",
         company: "TecnoAR S.A.",
         taxId: "30-11111111-1",
@@ -192,11 +195,8 @@ async function main() {
         tags: ["SaaS", "Enterprise", "Tech"],
         notes: "Cliente estrella. Gran potencial de upsell. Muy satisfecho con el servicio.",
       },
-    }),
-    prisma.client.upsert({
-      where: { email: "info@comercialsur.com.ar" },
-      update: {},
-      create: {
+      {
+        id: "client-comercialsur",
         name: "Ana González",
         company: "Comercial Sur S.R.L.",
         taxId: "30-22222222-2",
@@ -205,16 +205,13 @@ async function main() {
         city: "Córdoba",
         industry: "Retail",
         companySize: "11-50",
-        stage: "ACTIVE" as any,
+        stage: "PROPOSAL_SENT",
         score: "MEDIUM",
         tags: ["Retail", "eCommerce"],
         notes: "E-commerce en crecimiento. Necesitan soporte continuo.",
       },
-    }),
-    prisma.client.upsert({
-      where: { email: "hola@startupnova.io" },
-      update: {},
-      create: {
+      {
+        id: "client-startupnova",
         name: "Martín López",
         company: "StartupNova",
         taxId: "30-33333333-3",
@@ -228,11 +225,8 @@ async function main() {
         tags: ["Startup", "FinTech", "MVP"],
         notes: "Startup en ronda seed. Necesitan MVP en 3 meses.",
       },
-    }),
-    prisma.client.upsert({
-      where: { email: "ventas@constructoraparana.com" },
-      update: {},
-      create: {
+      {
+        id: "client-parana",
         name: "Roberto Sánchez",
         company: "Constructora Paraná",
         taxId: "30-44444444-4",
@@ -245,11 +239,8 @@ async function main() {
         score: "MEDIUM",
         tags: ["Construcción", "ERP"],
       },
-    }),
-    prisma.client.upsert({
-      where: { email: "contacto@medtech360.com" },
-      update: {},
-      create: {
+      {
+        id: "client-medtech",
         name: "Laura Méndez",
         company: "MedTech 360",
         taxId: "30-55555555-5",
@@ -262,8 +253,10 @@ async function main() {
         score: "HIGH",
         tags: ["Salud", "HealthTech", "SaaS"],
       },
-    }),
-  ]);
+    ],
+  });
+
+  const clients = await prisma.client.findMany({ orderBy: { createdAt: "asc" } });
 
   console.log("✅ Clientes creados");
 

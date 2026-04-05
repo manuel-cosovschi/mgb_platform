@@ -28,15 +28,16 @@ import { toast } from "sonner";
 
 interface CompanySettings {
   id: string;
-  companyName: string;
-  email: string;
+  name: string;
+  email?: string;
   phone?: string;
   address?: string;
   website?: string;
+  city?: string;
+  country?: string;
   invoicePrefix: string;
   invoiceNextNumber: number;
-  taxRate: number;
-  currency: string;
+  defaultCurrency: string;
   logoUrl?: string;
 }
 
@@ -64,13 +65,14 @@ function CompanyTab() {
       const r = await fetch("/api/settings/company");
       return r.json();
     },
-    onSuccess(data) {
-      if (!loaded) {
-        setForm(data);
-        setLoaded(true);
-      }
-    },
-  } as any);
+  });
+
+  // Initialize form once data loads
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  if (settings && !loaded) {
+    setForm(settings);
+    setLoaded(true);
+  }
 
   const mutation = useMutation({
     mutationFn: async (data: Partial<CompanySettings>) => {
@@ -104,8 +106,8 @@ function CompanyTab() {
           <div className="space-y-2">
             <Label>Nombre de la empresa</Label>
             <Input
-              value={form.companyName || ""}
-              onChange={(e) => setForm((p) => ({ ...p, companyName: e.target.value }))}
+              value={form.name || ""}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
               placeholder="MGB Software Factory"
             />
           </div>
@@ -168,19 +170,10 @@ function CompanyTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label>IVA (%)</Label>
-            <Input
-              type="number"
-              step="0.1"
-              value={form.taxRate ?? 21}
-              onChange={(e) => setForm((p) => ({ ...p, taxRate: parseFloat(e.target.value) }))}
-            />
-          </div>
-          <div className="space-y-2">
             <Label>Moneda</Label>
             <Select
-              value={form.currency || "EUR"}
-              onValueChange={(v) => setForm((p) => ({ ...p, currency: v }))}
+              value={form.defaultCurrency || "ARS"}
+              onValueChange={(v) => setForm((p) => ({ ...p, defaultCurrency: v }))}
             >
               <SelectTrigger>
                 <SelectValue />

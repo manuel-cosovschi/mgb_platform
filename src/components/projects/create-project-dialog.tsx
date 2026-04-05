@@ -19,7 +19,7 @@ const schema = z.object({
   priority: z.enum(["LOW","MEDIUM","HIGH","URGENT"]).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  budget: z.coerce.number().optional(),
+  budget: z.number().optional(),
   budgetCurrency: z.enum(["ARS","USD","EUR"]).optional(),
 });
 
@@ -116,7 +116,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: Props) {
 
             <div className="space-y-1.5">
               <Label>Presupuesto</Label>
-              <Input type="number" placeholder="0" {...register("budget")} />
+              <Input type="number" placeholder="0" {...register("budget", { valueAsNumber: true })} />
             </div>
 
             <div className="space-y-1.5">

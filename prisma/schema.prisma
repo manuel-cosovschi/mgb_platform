@@ -4,7 +4,8 @@
 // OKRs, Analytics, Portal Clientes, Integraciones, Config, Seguridad
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {

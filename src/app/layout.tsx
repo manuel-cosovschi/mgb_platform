@@ -1,13 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -15,11 +9,6 @@ export const metadata: Metadata = {
     template: "%s | MGB Hub",
   },
   description: "Plataforma all-in-one para MGB Software Factory",
-  manifest: "/manifest.json",
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
 };
 
 export const viewport: Viewport = {
@@ -37,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning className={inter.variable}>
-      <body className="min-h-screen bg-background font-sans antialiased">
+    <html lang="es" suppressHydrationWarning>
+      <body className="min-h-screen bg-background antialiased" style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif" }}>
         <Providers>
           {children}
           <Toaster richColors position="top-right" />

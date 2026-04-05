@@ -20,14 +20,14 @@ const schema = z.object({
   clientId: z.string().min(1, "Seleccioná un cliente"),
   projectId: z.string().optional(),
   currency: z.enum(["ARS","USD","EUR"]),
-  taxRate: z.coerce.number().min(0).max(100),
+  taxRate: z.number().min(0).max(100),
   issueDate: z.string().min(1),
   dueDate: z.string().min(1),
   notes: z.string().optional(),
   items: z.array(z.object({
     description: z.string().min(1),
-    quantity: z.coerce.number().positive(),
-    unitPrice: z.coerce.number().positive(),
+    quantity: z.number().positive(),
+    unitPrice: z.number().positive(),
   })).min(1),
 });
 
@@ -168,10 +168,10 @@ export default function NewInvoicePage() {
                           <Input placeholder="Descripción del servicio..." {...register(`items.${i}.description`)} />
                         </div>
                         <div className="col-span-2">
-                          <Input type="number" step="0.01" min="0" {...register(`items.${i}.quantity`)} className="text-right" />
+                          <Input type="number" step="0.01" min="0" {...register(`items.${i}.quantity`, { valueAsNumber: true })} className="text-right" />
                         </div>
                         <div className="col-span-3">
-                          <Input type="number" step="0.01" min="0" placeholder="0.00" {...register(`items.${i}.unitPrice`)} className="text-right" />
+                          <Input type="number" step="0.01" min="0" placeholder="0.00" {...register(`items.${i}.unitPrice`, { valueAsNumber: true })} className="text-right" />
                         </div>
                         <div className="col-span-1 flex justify-center">
                           {fields.length > 1 && (
@@ -216,7 +216,7 @@ export default function NewInvoicePage() {
                         min="0"
                         max="100"
                         className="w-16 h-7 text-xs text-right"
-                        {...register("taxRate")}
+                        {...register("taxRate", { valueAsNumber: true })}
                       />
                       <span className="text-xs">%</span>
                     </div>

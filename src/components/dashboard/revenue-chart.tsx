@@ -71,7 +71,7 @@ export function RevenueChart() {
                 borderRadius: "8px",
                 color: "hsl(var(--popover-foreground))",
               }}
-              formatter={(value: number) => [formatCurrency(value), ""]}
+              formatter={(value) => [formatCurrency(Number(value)), ""]}
             />
             <Legend
               wrapperStyle={{ fontSize: "12px", color: "hsl(var(--muted-foreground))" }}

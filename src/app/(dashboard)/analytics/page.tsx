@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v), ""]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => [formatCurrency(Number(v)), ""]} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Area type="monotone" dataKey="ingresos" name="Ingresos" stroke="#6366f1" strokeWidth={2} fill="url(#gi)" />
                 <Area type="monotone" dataKey="egresos" name="Egresos" stroke="#f43f5e" strokeWidth={2} fill="url(#ge)" />
@@ -97,7 +97,7 @@ export default function AnalyticsPage() {
                   <Pie data={byClient} cx="50%" cy="50%" outerRadius={80} dataKey="total" nameKey="name">
                     {(byClient as any[]).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v), ""]} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => [formatCurrency(Number(v)), ""]} />
                   <Legend wrapperStyle={{ fontSize: 10 }} />
                 </PieChart>
               </ResponsiveContainer>
@@ -113,7 +113,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                 <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis dataKey="name" type="category" tick={axisStyle} axisLine={false} tickLine={false} width={60} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v}h`, "Horas"]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${Number(v)}h`, "Horas"]} />
                 <Bar dataKey="horas" name="Horas" fill="#6366f1" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -125,7 +125,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v), ""]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => [formatCurrency(Number(v)), ""]} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="ingresos" name="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="costos" name="Costos" fill="#f43f5e" radius={[4, 4, 0, 0]} />
@@ -141,7 +141,7 @@ export default function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="month" tick={axisStyle} axisLine={false} tickLine={false} />
               <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v), "Ganancia"]} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v) => [formatCurrency(Number(v)), "Ganancia"]} />
               <Bar dataKey="ganancia" name="Ganancia neta" radius={[4, 4, 0, 0]}>
                 {(monthly ?? []).map((entry: any, i: number) => (
                   <Cell key={i} fill={entry.ganancia >= 0 ? "#10b981" : "#f43f5e"} />

@@ -18,7 +18,7 @@ export async function GET() {
   const invoices = await db.invoice.findMany({
     where: { clientId: client.id },
     include: { items: true },
-    orderBy: { issuedAt: "desc" },
+    orderBy: { issueDate: "desc" },
   });
 
   return NextResponse.json(invoices);

@@ -26,7 +26,7 @@ const categories = [
 const schema = z.object({
   category: z.enum(["HOSTING","TOOLS","SALARIES","TAXES","OFFICE","MARKETING","TRAVEL","OTHER"]),
   description: z.string().min(1),
-  amount: z.coerce.number().positive(),
+  amount: z.number().positive(),
   currency: z.enum(["ARS","USD","EUR"]),
   date: z.string().min(1),
   isRecurring: z.boolean().optional(),
@@ -78,7 +78,7 @@ export default function NewExpensePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Monto *</Label>
-                  <Input type="number" step="0.01" placeholder="0.00" {...register("amount")} />
+                  <Input type="number" step="0.01" placeholder="0.00" {...register("amount", { valueAsNumber: true })} />
                   {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
                 </div>
                 <div className="space-y-1.5">

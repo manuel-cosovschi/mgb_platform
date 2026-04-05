@@ -71,15 +71,15 @@ export default function PortalProjectsPage() {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-xs text-muted-foreground">Progreso general</span>
-                        <span className="text-xs font-medium">{p.progress}%</span>
+                        <span className="text-xs font-medium">{p.completionRate}%</span>
                       </div>
-                      <Progress value={p.progress} className="h-2" />
+                      <Progress value={p.completionRate} className="h-2" />
                     </div>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {p.dueDate && (
+                      {p.endDate && (
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {formatDate(p.dueDate)}
+                          {formatDate(p.endDate)}
                         </span>
                       )}
                       <span className="flex items-center gap-1">

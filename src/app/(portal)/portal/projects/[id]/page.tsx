@@ -101,12 +101,12 @@ export default function PortalProjectDetailPage({
                 </p>
               </div>
             )}
-            {project.dueDate && (
+            {project.endDate && (
               <div>
                 <p className="text-xs text-muted-foreground">Entrega</p>
                 <p className="text-sm font-medium mt-1 flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {formatDate(project.dueDate)}
+                  {formatDate(project.endDate)}
                 </p>
               </div>
             )}
@@ -122,9 +122,9 @@ export default function PortalProjectDetailPage({
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-sm font-medium">Progreso general</span>
-              <span className="text-sm font-bold">{project.progress}%</span>
+              <span className="text-sm font-bold">{project.completionRate}%</span>
             </div>
-            <Progress value={project.progress} className="h-3" />
+            <Progress value={project.completionRate} className="h-3" />
           </div>
         </CardContent>
       </Card>
