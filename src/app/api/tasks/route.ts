@@ -112,6 +112,17 @@ export async function POST(req: NextRequest) {
 
     const { assigneeIds, labelIds, ...data } = parsed.data;
 
+    // Block new tasks when the project has an active distribution pool
+    if (data.projectId) {
+      const pool = await db.projectPool.findUnique({ where: { projectId: data.projectId } });
+      if (pool) {
+        return NextResponse.json(
+          { error: "No se pueden agregar tareas con distribución activa. Desactivá el pool primero." },
+          { status: 403 }
+        );
+      }
+    }
+
     // Obtener el máximo order en la columna/proyecto
     const lastTask = await db.task.findFirst({
       where: { projectId: data.projectId, columnId: data.columnId ?? null },

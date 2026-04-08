@@ -56,12 +56,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { assigneeIds, labelIds, ...data } = body;
 
+  // When status changes without an explicit columnId, sync the task to the matching
+  // project column so the kanban board stays consistent (status ↔ column are coupled).
+  const STATUS_TO_ORDER: Record<string, number> = {
+    BACKLOG: 0, TODO: 1, IN_PROGRESS: 2, IN_REVIEW: 3, DONE: 4,
+  };
+  let resolvedColumnId = data.columnId;
+  if (data.status && !data.columnId && oldTask.projectId && data.status in STATUS_TO_ORDER) {
+    const targetOrder = STATUS_TO_ORDER[data.status];
+    const matchingCol = await db.kanbanColumn.findFirst({
+      where: { projectId: oldTask.projectId, order: targetOrder },
+      select: { id: true },
+    });
+    if (matchingCol) resolvedColumnId = matchingCol.id;
+  }
+
   const task = await db.$transaction(async (tx) => {
     // Update base fields
     const updated = await tx.task.update({
       where: { id },
       data: {
         ...data,
+        ...(resolvedColumnId !== undefined && { columnId: resolvedColumnId }),
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         completedAt: data.status === "DONE" && !oldTask.completedAt ? new Date() : data.status !== "DONE" ? null : undefined,

@@ -194,6 +194,7 @@ export function ProjectBoard({ project }: Props) {
             projectId={project.id}
             currentUserId={currentUserId}
             distributionMap={distributionMap}
+            poolExists={!!poolData?.pool}
             onUpdate={refetch}
           />
         </TabsContent>
