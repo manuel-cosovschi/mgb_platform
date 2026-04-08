@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Settings, Users, Calendar, BarChart2, List, Layout, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,10 +43,18 @@ const statusConfig: Record<string, { label: string; variant: string }> = {
   CANCELLED: { label: "Cancelado", variant: "destructive" },
 };
 
+const SOCIO_COLORS = [
+  { bg: "bg-emerald-500", text: "text-emerald-600", light: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-400" },
+  { bg: "bg-blue-500", text: "text-blue-600", light: "bg-blue-50 dark:bg-blue-950/30", border: "border-blue-400" },
+  { bg: "bg-violet-500", text: "text-violet-600", light: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-400" },
+  { bg: "bg-orange-500", text: "text-orange-600", light: "bg-orange-50 dark:bg-orange-950/30", border: "border-orange-400" },
+];
+
 export function ProjectBoard({ project }: Props) {
   const [activeTab, setActiveTab] = useState("board");
   const { data: session } = useSession();
   const isSocio = session?.user?.role === "SOCIO";
+  const currentUserId = session?.user?.id;
 
   const { data: taskData, isLoading, refetch } = useQuery({
     queryKey: ["tasks", project.id],
@@ -55,6 +63,39 @@ export function ProjectBoard({ project }: Props) {
       return res.json();
     },
   });
+
+  const { data: poolData } = useQuery({
+    queryKey: ["pool", project.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/projects/${project.id}/pool`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  // Build a stable distributionMap: taskId → { assignedTo, assignedName, color }
+  const distributionMap = useMemo(() => {
+    const distributions: any[] = poolData?.pool?.distributions ?? [];
+    // Stable color assignment: sort unique owner IDs alphabetically
+    const uniqueOwners = [...new Set(
+      distributions.map((d: any) => d.assignedTo).filter(Boolean)
+    )].sort() as string[];
+    const colorByUser: Record<string, typeof SOCIO_COLORS[0]> = Object.fromEntries(
+      uniqueOwners.map((uid, i) => [uid, SOCIO_COLORS[i % SOCIO_COLORS.length]])
+    );
+    return Object.fromEntries(
+      distributions
+        .filter((d: any) => d.assignedTo && d.status !== "RELEASED")
+        .map((d: any) => [
+          d.taskId,
+          {
+            assignedTo: d.assignedTo as string,
+            assignedName: (d.user?.name ?? "Socio") as string,
+            color: colorByUser[d.assignedTo] ?? SOCIO_COLORS[0],
+          },
+        ])
+    ) as Record<string, { assignedTo: string; assignedName: string; color: typeof SOCIO_COLORS[0] }>;
+  }, [poolData]);
 
   const tasks = taskData?.data ?? [];
   const doneTasks = tasks.filter((t: any) => t.status === "DONE").length;
@@ -151,6 +192,8 @@ export function ProjectBoard({ project }: Props) {
             tasks={tasks}
             isLoading={isLoading}
             projectId={project.id}
+            currentUserId={currentUserId}
+            distributionMap={distributionMap}
             onUpdate={refetch}
           />
         </TabsContent>

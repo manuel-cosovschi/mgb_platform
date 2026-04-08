@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Calendar, Clock, Flag, Tag, User, MessageSquare,
-  CheckSquare, Paperclip, X, Plus, Trash2, Edit2, Check,
+  CheckSquare, Paperclip, X, Plus, Trash2, Edit2, Check, Lock,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ interface Props {
   taskId: string | null;
   onClose: () => void;
   onUpdate: () => void;
+  canEdit?: boolean;
+  ownerName?: string;
 }
 
 const statusOptions = [
@@ -44,7 +46,7 @@ const statusColors: Record<string, string> = {
   IN_REVIEW: "purple", BLOCKED: "destructive", DONE: "success",
 };
 
-export function TaskDetailModal({ taskId, onClose, onUpdate }: Props) {
+export function TaskDetailModal({ taskId, onClose, onUpdate, canEdit = true, ownerName }: Props) {
   const qc = useQueryClient();
   const [comment, setComment] = useState("");
   const [newCheckItem, setNewCheckItem] = useState("");
@@ -129,11 +131,19 @@ export function TaskDetailModal({ taskId, onClose, onUpdate }: Props) {
             {/* Header */}
             <div className="flex items-start gap-3 p-6 pb-0">
               <div className="flex-1 min-w-0">
+                {/* Read-only banner */}
+                {!canEdit && ownerName && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 mb-2 w-fit">
+                    <Lock className="h-3 w-3" />
+                    Tarea de <span className="font-medium text-foreground">{ownerName}</span> — solo lectura
+                  </div>
+                )}
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <select
                     value={task.status}
-                    onChange={(e) => updateTask({ status: e.target.value })}
-                    className="text-xs border rounded px-2 py-1 bg-background"
+                    onChange={(e) => canEdit && updateTask({ status: e.target.value })}
+                    disabled={!canEdit}
+                    className="text-xs border rounded px-2 py-1 bg-background disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {statusOptions.map((s) => (
                       <option key={s.value} value={s.value}>{s.label}</option>
@@ -141,8 +151,9 @@ export function TaskDetailModal({ taskId, onClose, onUpdate }: Props) {
                   </select>
                   <select
                     value={task.priority}
-                    onChange={(e) => updateTask({ priority: e.target.value })}
-                    className="text-xs border rounded px-2 py-1 bg-background"
+                    onChange={(e) => canEdit && updateTask({ priority: e.target.value })}
+                    disabled={!canEdit}
+                    className="text-xs border rounded px-2 py-1 bg-background disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {priorityOptions.map((p) => (
                       <option key={p.value} value={p.value}>{p.label}</option>
@@ -153,9 +164,11 @@ export function TaskDetailModal({ taskId, onClose, onUpdate }: Props) {
                 <h2 className="text-lg font-semibold leading-tight">{task.title}</h2>
               </div>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={deleteTask}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {canEdit && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={deleteTask}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
                   <X className="h-4 w-4" />
                 </Button>
@@ -196,34 +209,37 @@ export function TaskDetailModal({ taskId, onClose, onUpdate }: Props) {
                           <input
                             type="checkbox"
                             checked={item.isCompleted}
-                            onChange={(e) => toggleCheckItem(item.id, e.target.checked)}
-                            className="h-4 w-4 rounded accent-primary cursor-pointer"
+                            disabled={!canEdit}
+                            onChange={(e) => canEdit && toggleCheckItem(item.id, e.target.checked)}
+                            className="h-4 w-4 rounded accent-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                           />
                           <span className={`text-sm ${item.isCompleted ? "line-through text-muted-foreground" : ""}`}>
                             {item.title}
                           </span>
                         </div>
                       ))}
-                      {addingCheck ? (
-                        <div className="flex items-center gap-2 mt-2">
-                          <input
-                            autoFocus
-                            className="flex-1 text-sm border rounded px-2 py-1 bg-background"
-                            placeholder="Nuevo ítem..."
-                            value={newCheckItem}
-                            onChange={(e) => setNewCheckItem(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") addCheckItem();
-                              if (e.key === "Escape") { setAddingCheck(false); setNewCheckItem(""); }
-                            }}
-                          />
-                          <Button size="sm" className="h-7" onClick={addCheckItem}><Check className="h-3 w-3" /></Button>
-                          <Button size="sm" variant="ghost" className="h-7" onClick={() => setAddingCheck(false)}><X className="h-3 w-3" /></Button>
-                        </div>
-                      ) : (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setAddingCheck(true)}>
-                          <Plus className="h-3 w-3 mr-1" /> Agregar ítem
-                        </Button>
+                      {canEdit && (
+                        addingCheck ? (
+                          <div className="flex items-center gap-2 mt-2">
+                            <input
+                              autoFocus
+                              className="flex-1 text-sm border rounded px-2 py-1 bg-background"
+                              placeholder="Nuevo ítem..."
+                              value={newCheckItem}
+                              onChange={(e) => setNewCheckItem(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") addCheckItem();
+                                if (e.key === "Escape") { setAddingCheck(false); setNewCheckItem(""); }
+                              }}
+                            />
+                            <Button size="sm" className="h-7" onClick={addCheckItem}><Check className="h-3 w-3" /></Button>
+                            <Button size="sm" variant="ghost" className="h-7" onClick={() => setAddingCheck(false)}><X className="h-3 w-3" /></Button>
+                          </div>
+                        ) : (
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setAddingCheck(true)}>
+                            <Plus className="h-3 w-3 mr-1" /> Agregar ítem
+                          </Button>
+                        )
                       )}
                     </div>
                   </div>

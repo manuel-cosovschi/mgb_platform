@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,11 +27,19 @@ interface Task {
   _count: { comments: number; subtasks: number };
 }
 
+interface DistributionOwner {
+  assignedTo: string;
+  assignedName: string;
+  color: { bg: string; text: string; light: string; border: string };
+}
+
 interface Props {
   columns: Column[];
   tasks: Task[];
   isLoading: boolean;
   projectId: string;
+  currentUserId?: string;
+  distributionMap?: Record<string, DistributionOwner>;
   onUpdate: () => void;
 }
 
@@ -42,10 +50,23 @@ const priorityColors: Record<string, string> = {
   URGENT: "border-l-red-500",
 };
 
-export function KanbanBoard({ columns, tasks, isLoading, projectId, onUpdate }: Props) {
+const priorityDotColors: Record<string, string> = {
+  LOW: "bg-slate-400",
+  MEDIUM: "bg-yellow-400",
+  HIGH: "bg-orange-400",
+  URGENT: "bg-red-500",
+};
+
+export function KanbanBoard({
+  columns, tasks, isLoading, projectId, currentUserId, distributionMap = {}, onUpdate,
+}: Props) {
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<{
+    id: string;
+    canEdit: boolean;
+    ownerName?: string;
+  } | null>(null);
 
   const tasksByColumn = columns.reduce((acc, col) => {
     acc[col.id] = tasks.filter((t) => t.columnId === col.id);
@@ -54,7 +75,6 @@ export function KanbanBoard({ columns, tasks, isLoading, projectId, onUpdate }: 
 
   async function createTask(columnId: string) {
     if (!newTaskTitle.trim()) return;
-
     const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -65,7 +85,6 @@ export function KanbanBoard({ columns, tasks, isLoading, projectId, onUpdate }: 
         status: columnId ? "TODO" : "BACKLOG",
       }),
     });
-
     if (res.ok) {
       setNewTaskTitle("");
       setAddingToColumn(null);
@@ -88,8 +107,13 @@ export function KanbanBoard({ columns, tasks, isLoading, projectId, onUpdate }: 
     );
   }
 
+  const hasDistribution = Object.keys(distributionMap).length > 0;
+
   return (
     <div className="flex gap-4 p-6 overflow-x-auto h-full items-start">
+      {hasDistribution && (
+        <div className="sr-only">Distribución activa</div>
+      )}
       {columns.map((column) => {
         const colTasks = tasksByColumn[column.id] ?? [];
         return (
@@ -114,50 +138,90 @@ export function KanbanBoard({ columns, tasks, isLoading, projectId, onUpdate }: 
 
             {/* Tasks */}
             <div className="space-y-2 overflow-y-auto flex-1">
-              {colTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className={`rounded-lg border bg-card p-3 cursor-pointer hover:shadow-md transition-all border-l-2 ${priorityColors[task.priority] ?? "border-l-slate-400"}`}
-                  onClick={() => setSelectedTaskId(task.id)}
-                >
-                  <p className="text-sm font-medium mb-2">{task.title}</p>
+              {colTasks.map((task) => {
+                const dist = distributionMap[task.id];
+                const isOwned = !!dist;
+                const isMyTask = dist?.assignedTo === currentUserId;
+                // Editable if: no distribution exists OR it's my task
+                const canEdit = !isOwned || isMyTask;
 
-                  {task.labels?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {task.labels.map(({ label }) => (
-                        <span
-                          key={label.id}
-                          className="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                          style={{ backgroundColor: `${label.color}20`, color: label.color }}
-                        >
-                          {label.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                const leftBorderClass = isOwned
+                  ? `border-l-2 ${dist.color.border}`
+                  : `border-l-2 ${priorityColors[task.priority] ?? "border-l-slate-400"}`;
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex -space-x-1.5">
-                      {task.assignments?.slice(0, 3).map(({ user }) => (
-                        <Avatar key={user.id} className="h-5 w-5 border border-background">
-                          <AvatarImage src={user.image ?? undefined} />
-                          <AvatarFallback className="text-[9px]">{initials(user.name)}</AvatarFallback>
-                        </Avatar>
-                      ))}
+                return (
+                  <div
+                    key={task.id}
+                    className={`rounded-lg border bg-card p-3 cursor-pointer transition-all hover:shadow-md ${leftBorderClass} ${
+                      isOwned && !isMyTask ? "opacity-75" : ""
+                    }`}
+                    onClick={() =>
+                      setSelectedTask({ id: task.id, canEdit, ownerName: dist?.assignedName })
+                    }
+                  >
+                    {/* Title row */}
+                    <div className="flex items-start gap-1.5 mb-2">
+                      <p className="text-sm font-medium flex-1 leading-snug">{task.title}</p>
+                      {isOwned && !isMyTask && (
+                        <Lock className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+                      )}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {task.dueDate && (
-                        <span>{formatDate(task.dueDate)}</span>
+
+                    {/* Labels */}
+                    {task.labels?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {task.labels.map(({ label }) => (
+                          <span
+                            key={label.id}
+                            className="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                            style={{ backgroundColor: `${label.color}20`, color: label.color }}
+                          >
+                            {label.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Footer row */}
+                    <div className="flex items-center justify-between gap-1">
+                      {/* Owner badge (when distribution active) */}
+                      {isOwned ? (
+                        <div className="flex items-center gap-1.5">
+                          <div className={`h-2 w-2 rounded-full shrink-0 ${dist.color.bg}`} />
+                          <span className={`text-[10px] font-medium ${dist.color.text}`}>
+                            {isMyTask ? "Tuya" : dist.assignedName.split(" ")[0]}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex -space-x-1.5">
+                          {task.assignments?.slice(0, 3).map(({ user }) => (
+                            <Avatar key={user.id} className="h-5 w-5 border border-background">
+                              <AvatarImage src={user.image ?? undefined} />
+                              <AvatarFallback className="text-[9px]">{initials(user.name)}</AvatarFallback>
+                            </Avatar>
+                          ))}
+                        </div>
                       )}
-                      {task._count?.comments > 0 && (
-                        <span>{task._count.comments} 💬</span>
-                      )}
+
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {/* Priority dot (only when no distribution coloring) */}
+                        {!isOwned && (
+                          <div
+                            className={`h-2 w-2 rounded-full ${priorityDotColors[task.priority] ?? "bg-slate-400"}`}
+                            title={task.priority}
+                          />
+                        )}
+                        {task.dueDate && <span>{formatDate(task.dueDate)}</span>}
+                        {task._count?.comments > 0 && (
+                          <span>{task._count.comments} 💬</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
-              {/* Quick add form */}
+              {/* Quick add */}
               {addingToColumn === column.id ? (
                 <div className="rounded-lg border bg-card p-2">
                   <input
@@ -205,8 +269,10 @@ export function KanbanBoard({ columns, tasks, isLoading, projectId, onUpdate }: 
       })}
 
       <TaskDetailModal
-        taskId={selectedTaskId}
-        onClose={() => setSelectedTaskId(null)}
+        taskId={selectedTask?.id ?? null}
+        canEdit={selectedTask?.canEdit ?? true}
+        ownerName={selectedTask?.ownerName}
+        onClose={() => setSelectedTask(null)}
         onUpdate={onUpdate}
       />
     </div>

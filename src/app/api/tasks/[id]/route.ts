@@ -44,6 +44,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const oldTask = await db.task.findUnique({ where: { id } });
   if (!oldTask) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // If a pool distribution exists for this task, only the assigned socio can edit it
+  if (session.user.role === "SOCIO") {
+    const dist = await db.taskDistribution.findFirst({
+      where: { taskId: id, status: { not: "RELEASED" } },
+    });
+    if (dist && dist.assignedTo !== session.user.id) {
+      return NextResponse.json({ error: "Esta tarea pertenece a otro socio" }, { status: 403 });
+    }
+  }
+
   const { assigneeIds, labelIds, ...data } = body;
 
   const task = await db.$transaction(async (tx) => {
@@ -112,6 +122,16 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   const session = await auth();
   if (!session || session.user.role === "CLIENTE") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Only the assigned socio can delete a distributed task
+  if (session.user.role === "SOCIO") {
+    const dist = await db.taskDistribution.findFirst({
+      where: { taskId: id, status: { not: "RELEASED" } },
+    });
+    if (dist && dist.assignedTo !== session.user.id) {
+      return NextResponse.json({ error: "Esta tarea pertenece a otro socio" }, { status: 403 });
+    }
+  }
 
   await db.task.delete({ where: { id } });
   await db.auditLog.create({
