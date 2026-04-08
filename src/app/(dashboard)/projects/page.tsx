@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { Plus, Search, FolderKanban, Calendar, MoreVertical, Pause, Trash2, CheckCircle, X } from "lucide-react";
+import { Plus, Search, FolderKanban, Calendar, MoreVertical, Pause, Trash2, CheckCircle, X, ShieldX, Clock } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,15 @@ import { formatDate, initials, formatCurrency } from "@/lib/utils";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
 import { toast } from "sonner";
 import Link from "next/link";
+
+function formatCountdown(expiresAt: string | null | undefined): string | null {
+  if (!expiresAt) return null;
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return "vencido";
+  const h = Math.floor(diff / 3_600_000);
+  const m = Math.floor((diff % 3_600_000) / 60_000);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
 
 const statusConfig: Record<string, { label: string; variant: string }> = {
   PLANNING: { label: "Planificación", variant: "info" },
@@ -69,7 +78,10 @@ function ProjectCard({
 
   const pendingApproval = approval?.status === "PENDING" ? approval : null;
   const hasApproved = pendingApproval?.approvedBy?.includes(userId);
+  const hasRejected = pendingApproval?.rejectedBy?.includes(userId);
   const approvalCount = pendingApproval?.approvedBy?.length ?? 0;
+  const isRequester = pendingApproval?.requestedBy === userId;
+  const countdown = formatCountdown(pendingApproval?.expiresAt);
 
   async function requestAction(e: React.MouseEvent, action: "DELETE" | "PAUSE") {
     e.preventDefault();
@@ -85,6 +97,10 @@ function ProjectCard({
     if (data.executed) {
       toast.success(action === "DELETE" ? "Proyecto eliminado" : "Proyecto pausado");
       onRefresh();
+    } else if (data.isCeoRequest) {
+      toast.success(`Solicitud de ${label} iniciada. Los socios tienen 12hs para rechazarla — si no, se ejecuta automáticamente.`);
+      refetchApproval();
+      queryClient.invalidateQueries({ queryKey: ["project-approval", project.id] });
     } else {
       toast.success(`Solicitud de ${label} iniciada. Esperando aprobación de los demás socios (${data.approvals}/${data.total})`);
       refetchApproval();
@@ -121,6 +137,20 @@ function ProjectCard({
     });
     toast.info("Solicitud cancelada");
     refetchApproval();
+  }
+
+  async function rejectAction(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const res = await fetch(`/api/projects/${project.id}/approvals`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "REJECT" }),
+    });
+    if (!res.ok) { toast.error("Error al rechazar"); return; }
+    toast.success("Solicitud rechazada — el proyecto no se modificará");
+    refetchApproval();
+    queryClient.invalidateQueries({ queryKey: ["project-approval", project.id] });
   }
 
   return (
@@ -176,24 +206,46 @@ function ProjectCard({
               className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs"
               onClick={(e) => e.preventDefault()}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-medium text-amber-600 dark:text-amber-400">
-                  {pendingApproval.action === "DELETE" ? "Eliminar" : "Pausar"} — {approvalCount}/3 aprobaciones
-                </span>
-                <div className="flex gap-1">
-                  {!hasApproved && (
-                    <Button size="sm" variant="outline" className="h-6 px-2 text-xs border-amber-500 text-amber-600" onClick={approveAction}>
-                      <CheckCircle className="h-3 w-3 mr-1" /> Aprobar
-                    </Button>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                  {pendingApproval.action === "DELETE" ? "⚠ Eliminar" : "⏸ Pausar"}
+                  {countdown ? (
+                    <span className="flex items-center gap-0.5 text-amber-600">
+                      <Clock className="h-3 w-3" /> {countdown}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground font-normal">{approvalCount}/3 aprob.</span>
                   )}
-                  <Button size="sm" variant="ghost" className="h-6 px-1" onClick={cancelApproval}>
-                    <X className="h-3 w-3" />
-                  </Button>
+                </span>
+                <div className="flex gap-1 flex-wrap">
+                  {isRequester ? (
+                    /* Requester can only cancel */
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground" onClick={cancelApproval}>
+                      <X className="h-3 w-3 mr-1" /> Cancelar
+                    </Button>
+                  ) : (
+                    <>
+                      {!hasApproved && !hasRejected && (
+                        <Button size="sm" variant="outline" className="h-6 px-2 text-xs border-emerald-500 text-emerald-700 dark:text-emerald-400" onClick={approveAction}>
+                          <CheckCircle className="h-3 w-3 mr-1" /> Aprobar
+                        </Button>
+                      )}
+                      {!hasRejected && (
+                        <Button size="sm" variant="outline" className="h-6 px-2 text-xs border-red-400 text-red-600 dark:text-red-400" onClick={rejectAction}>
+                          <ShieldX className="h-3 w-3 mr-1" /> Rechazar
+                        </Button>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
-              <p className="text-muted-foreground mt-0.5">
-                Solicitado por {pendingApproval.requester?.name?.split(" ")[0]}
-                {hasApproved ? " · Ya aprobaste" : ""}
+              <p className="text-muted-foreground mt-1 leading-relaxed">
+                Pedido por <span className="font-medium text-foreground">{pendingApproval.requester?.name?.split(" ")[0]}</span>
+                {hasApproved && !isRequester && " · Ya aprobaste"}
+                {hasRejected && " · Ya rechazaste"}
+                {countdown && !isRequester && !hasRejected && (
+                  <span className="text-amber-600 dark:text-amber-500"> · Si no rechazás antes, se ejecuta automáticamente</span>
+                )}
               </p>
             </div>
           )}
