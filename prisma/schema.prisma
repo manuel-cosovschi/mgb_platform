@@ -54,6 +54,43 @@ enum TaskPriority {
   URGENT
 }
 
+enum PoolStatus {
+  ACTIVE
+  SETTLED
+}
+
+enum DistStatus {
+  ASSIGNED
+  RELEASED
+  CLAIMED
+  COMPLETED
+}
+
+enum MovementAction {
+  INITIAL_ASSIGN
+  RELEASED
+  CLAIMED
+  AUTO_REDISTRIBUTED
+  COMPLETED
+}
+
+enum SettlementStatus {
+  PENDING
+  APPROVED
+  PAID
+}
+
+enum ParticipantRole {
+  CREATOR
+  MEMBER
+}
+
+enum ParticipantStatus {
+  ACTIVE
+  INVITED
+  LEFT
+}
+
 enum CRMStage {
   LEAD
   CONTACTED
@@ -236,6 +273,8 @@ model User {
   documents            Document[]            @relation("DocumentUploader")
   createdProjects      Project[]             @relation("ProjectCreator")
   projectApprovals     ProjectApproval[]     @relation("ProjectApprovalRequester")
+  taskDistributions    TaskDistribution[]
+  projectParticipations ProjectParticipant[]
   okrOwner             OKR[]
   checkIns             OKRCheckIn[]
   performanceReviews   PerformanceReview[]   @relation("Reviewer")
@@ -562,15 +601,17 @@ model Project {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
-  members     ProjectMember[]
-  tasks       Task[]
-  sprints     Sprint[]
-  columns     KanbanColumn[]
-  projectDocs Document[]      @relation("ProjectDocuments")
-  timeEntries TimeEntry[]
-  invoices    Invoice[]
-  milestones  Milestone[]
-  approvals   ProjectApproval[]
+  members      ProjectMember[]
+  tasks        Task[]
+  sprints      Sprint[]
+  columns      KanbanColumn[]
+  projectDocs  Document[]       @relation("ProjectDocuments")
+  timeEntries  TimeEntry[]
+  invoices     Invoice[]
+  milestones   Milestone[]
+  approvals    ProjectApproval[]
+  pool         ProjectPool?
+  participants ProjectParticipant[]
 
   @@map("projects")
 }
@@ -656,6 +697,7 @@ model Task {
   dueDate          DateTime?
   completedAt      DateTime?
   order            Int           @default(0)
+  storyPoints      Int           @default(1)
   isPublicToClient Boolean       @default(false)
   createdById      String?
   createdAt        DateTime      @default(now())
@@ -669,6 +711,7 @@ model Task {
   timeEntries    TimeEntry[]
   blockedBy      TaskDependency[] @relation("BlockedTask")
   blocks         TaskDependency[] @relation("BlockerTask")
+  distribution   TaskDistribution?
 
   @@map("tasks")
 }
@@ -1291,4 +1334,91 @@ model ProjectTemplate {
   createdAt   DateTime @default(now())
 
   @@map("project_templates")
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO A: DISTRIBUCIÓN DINÁMICA DE TRABAJO
+// ─────────────────────────────────────────────
+
+model ProjectParticipant {
+  id        String            @id @default(cuid())
+  projectId String
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      ParticipantRole   @default(MEMBER)
+  status    ParticipantStatus @default(ACTIVE)
+  joinedAt  DateTime          @default(now())
+  leftAt    DateTime?
+
+  @@unique([projectId, userId])
+  @@map("project_participants")
+}
+
+model ProjectPool {
+  id               String     @id @default(cuid())
+  projectId        String     @unique
+  project          Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  totalBudget      Float
+  operatingCostPct Float      @default(0.20)
+  distributablePool Float
+  totalPoints      Int        @default(0)
+  status           PoolStatus @default(ACTIVE)
+  settledAt        DateTime?
+  createdAt        DateTime   @default(now())
+
+  distributions TaskDistribution[]
+  movements     DistributionMovement[]
+  settlement    ProjectSettlement?
+
+  @@map("project_pools")
+}
+
+model TaskDistribution {
+  id            String    @id @default(cuid())
+  poolId        String
+  pool          ProjectPool @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  taskId        String    @unique
+  task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  assignedTo    String?
+  user          User?     @relation(fields: [assignedTo], references: [id])
+  points        Int
+  monetaryValue Float
+  percentage    Float
+  status        DistStatus @default(ASSIGNED)
+  releasedAt    DateTime?
+  claimedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("task_distributions")
+}
+
+model DistributionMovement {
+  id        String         @id @default(cuid())
+  poolId    String
+  pool      ProjectPool    @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  taskId    String
+  action    MovementAction
+  fromUser  String?
+  toUser    String?
+  points    Int
+  value     Float
+  note      String?
+  createdAt DateTime       @default(now())
+
+  @@map("distribution_movements")
+}
+
+model ProjectSettlement {
+  id         String           @id @default(cuid())
+  poolId     String           @unique
+  pool       ProjectPool      @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  details    Json
+  approvedBy String[]
+  status     SettlementStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+
+  @@map("project_settlements")
 }

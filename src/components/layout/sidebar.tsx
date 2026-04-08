@@ -9,7 +9,7 @@ import {
   UserCircle, FileText, MessageSquare, Calendar,
   Target, BarChart3, Globe, Settings, Timer,
   Building2, ChevronLeft, ChevronRight, LogOut, Moon, Sun,
-  X,
+  X, BookOpen,
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { useSidebar } from "./sidebar-context";
@@ -37,6 +37,7 @@ const navItems = [
   { title: "Analytics", href: "/analytics", icon: BarChart3, roles: ["SOCIO"] },
   { title: "Portal", href: "/portal", icon: Globe, roles: ["CLIENTE"] },
   { title: "Configuración", href: "/settings", icon: Settings, roles: ["SOCIO"] },
+  { title: "Guía de Git", href: "/git-guide", icon: BookOpen, roles: ["SOCIO", "EMPLEADO"] },
 ];
 
 interface SidebarProps {

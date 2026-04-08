@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Settings, Users, Calendar, BarChart2, List, Layout } from "lucide-react";
+import { Plus, Settings, Users, Calendar, BarChart2, List, Layout, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { initials, formatDate, formatCurrency } from "@/lib/utils";
 import { KanbanBoard } from "./kanban-board";
 import { TaskList } from "./task-list";
+import { DistributionTab } from "./distribution-tab";
+import { useSession } from "next-auth/react";
 
 interface Project {
   id: string;
@@ -43,6 +45,8 @@ const statusConfig: Record<string, { label: string; variant: string }> = {
 
 export function ProjectBoard({ project }: Props) {
   const [activeTab, setActiveTab] = useState("board");
+  const { data: session } = useSession();
+  const isSocio = session?.user?.role === "SOCIO";
 
   const { data: taskData, isLoading, refetch } = useQuery({
     queryKey: ["tasks", project.id],
@@ -126,6 +130,7 @@ export function ProjectBoard({ project }: Props) {
             {[
               { value: "board", label: "Tablero", icon: Layout },
               { value: "list", label: "Lista", icon: List },
+              { value: "distribucion", label: "Distribución", icon: DollarSign },
               { value: "analytics", label: "Analytics", icon: BarChart2 },
             ].map(({ value, label, icon: Icon }) => (
               <TabsTrigger
@@ -152,6 +157,15 @@ export function ProjectBoard({ project }: Props) {
 
         <TabsContent value="list" className="flex-1 overflow-auto m-0 p-6">
           <TaskList tasks={tasks} isLoading={isLoading} onUpdate={refetch} />
+        </TabsContent>
+
+        <TabsContent value="distribucion" className="flex-1 overflow-auto m-0">
+          <DistributionTab
+            projectId={project.id}
+            projectSlug={project.id}
+            budgetCurrency={project.budgetCurrency}
+            isSocio={isSocio}
+          />
         </TabsContent>
 
         <TabsContent value="analytics" className="flex-1 overflow-auto m-0 p-6">

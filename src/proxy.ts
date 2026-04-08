@@ -45,7 +45,8 @@ export const proxy = auth((req) => {
     pathname.startsWith("/okrs") ||
     pathname.startsWith("/analytics") ||
     pathname.startsWith("/settings") ||
-    pathname.startsWith("/chat")
+    pathname.startsWith("/chat") ||
+    pathname.startsWith("/git-guide")
   ) {
     if (role === "CLIENTE") {
       return NextResponse.redirect(new URL("/portal", req.url));
