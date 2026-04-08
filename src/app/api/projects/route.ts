@@ -15,6 +15,7 @@ const createProjectSchema = z.object({
   budget: z.number().optional(),
   budgetCurrency: z.enum(["ARS", "USD", "EUR"]).optional(),
   memberIds: z.array(z.string()).optional(),
+  participantIds: z.array(z.string()).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -116,7 +117,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { name, memberIds, ...data } = parsed.data;
+    const { name, memberIds, participantIds, ...data } = parsed.data;
 
     // Generar slug único
     let slug = slugify(name);
@@ -148,6 +149,18 @@ export async function POST(req: NextRequest) {
         columns: true,
       },
     });
+
+    // Pre-create socio participants so the distribution tab knows who's in
+    if (participantIds?.length) {
+      await db.projectParticipant.createMany({
+        data: participantIds.map((userId: string) => ({
+          projectId: project.id,
+          userId,
+          role: userId === session.user.id ? "CREATOR" : "MEMBER",
+        })),
+        skipDuplicates: true,
+      });
+    }
 
     // Log de auditoría
     await db.auditLog.create({
