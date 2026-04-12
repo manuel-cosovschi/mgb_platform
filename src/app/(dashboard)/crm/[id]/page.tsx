@@ -411,7 +411,7 @@ function EditClientDialog({ client, onClose, onSaved }: { client: any; onClose: 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
-        tags: form.tags ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
+        tags: form.tags ? form.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
       }),
     });
     setSaving(false);
