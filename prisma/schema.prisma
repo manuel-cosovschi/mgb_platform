@@ -100,6 +100,16 @@ enum CRMStage {
   LOST
 }
 
+enum ProspectStatus {
+  POTENTIAL      // Potencial — identificado, sin contactar
+  CONTACTED      // Contactado — mensaje enviado, esperando respuesta
+  IN_TALKS       // En charlas — conversación activa
+  IN_DEVELOPMENT // En desarrollo — proyecto en curso
+  DEPOSIT_PAID   // Seña pagada — señaron el proyecto
+  COMPLETED      // Terminado — proyecto entregado y cobrado
+  REJECTED       // Rechazado — no les interesó
+}
+
 enum LeadScore {
   LOW
   MEDIUM
@@ -544,6 +554,27 @@ model Client {
   customValues  CustomFieldValue[]
 
   @@map("clients")
+}
+
+model Prospect {
+  id             String         @id @default(cuid())
+  businessName   String
+  contactName    String?
+  phone          String?
+  email          String?
+  address        String?
+  service        String?        // "Página web", "Sistema de gestión", etc.
+  status         ProspectStatus @default(POTENTIAL)
+  notes          String?        @db.Text
+  budget         Decimal?       @db.Decimal(12, 2)
+  currency       Currency       @default(ARS)
+  firstContactAt DateTime?
+  closedAt       DateTime?
+  createdById    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@map("prospects")
 }
 
 model CRMInteraction {

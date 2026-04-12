@@ -36,6 +36,7 @@ export const proxy = auth((req) => {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/projects") ||
     pathname.startsWith("/crm") ||
+    pathname.startsWith("/prospectos") ||
     pathname.startsWith("/finance") ||
     pathname.startsWith("/time-tracking") ||
     pathname.startsWith("/employees") ||

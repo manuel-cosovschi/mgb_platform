@@ -9,7 +9,7 @@ import {
   UserCircle, FileText, MessageSquare, Calendar,
   Target, BarChart3, Globe, Settings, Timer,
   Building2, ChevronLeft, ChevronRight, LogOut, Moon, Sun,
-  X, BookOpen,
+  X, BookOpen, TrendingUp,
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { useSidebar } from "./sidebar-context";
@@ -26,6 +26,7 @@ const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["SOCIO", "EMPLEADO", "CLIENTE"] },
   { title: "Proyectos", href: "/projects", icon: FolderKanban, roles: ["SOCIO", "EMPLEADO", "CLIENTE"] },
   { title: "CRM", href: "/crm", icon: Users, roles: ["SOCIO", "EMPLEADO"] },
+  { title: "Prospectos", href: "/prospectos", icon: TrendingUp, roles: ["SOCIO", "EMPLEADO"] },
   { title: "Tiempo", href: "/time-tracking", icon: Timer, roles: ["SOCIO", "EMPLEADO"] },
   { title: "Finanzas", href: "/finance", icon: DollarSign, roles: ["SOCIO"] },
   { title: "Empleados", href: "/employees", icon: UserCircle, roles: ["SOCIO"] },
