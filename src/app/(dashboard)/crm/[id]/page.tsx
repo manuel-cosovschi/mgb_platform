@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Building2, Mail, Phone, MapPin, Globe, Linkedin,
-  Plus, Calendar, Clock, FileText, Pencil, Check, X, Tag,
+  Building2, Mail, Phone, MapPin, Globe, ExternalLink,
+  Plus, Calendar, Clock, FileText, Pencil, Tag,
   Briefcase, MessageSquare, PhoneCall, AtSign, Users,
 } from "lucide-react";
 import { Header } from "@/components/layout/header";
@@ -248,7 +248,7 @@ function ClientDetail({
               )}
               {client.linkedin && (
                 <a href={client.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
-                  <Linkedin className="h-4 w-4 shrink-0" />
+                  <ExternalLink className="h-4 w-4 shrink-0" />
                   LinkedIn
                 </a>
               )}
