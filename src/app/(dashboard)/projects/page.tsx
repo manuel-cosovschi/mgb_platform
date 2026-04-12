@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { Plus, Search, FolderKanban, Calendar, MoreVertical, Pause, Trash2, CheckCircle, X, ShieldX, Clock } from "lucide-react";
@@ -76,6 +76,13 @@ function ProjectCard({
 
   const { data: approval, refetch: refetchApproval } = useProjectApproval(project.id, isSocio);
 
+  // Auto-remove the card when the lazy expiry fires (GET returns {expired/executed: true})
+  useEffect(() => {
+    if (approval?.executed || approval?.expired) {
+      onRefresh();
+    }
+  }, [approval?.executed, approval?.expired, onRefresh]);
+
   const pendingApproval = approval?.status === "PENDING" ? approval : null;
   const hasApproved = pendingApproval?.approvedBy?.includes(userId);
   const hasRejected = pendingApproval?.rejectedBy?.includes(userId);
@@ -97,12 +104,8 @@ function ProjectCard({
     if (data.executed) {
       toast.success(action === "DELETE" ? "Proyecto eliminado" : "Proyecto pausado");
       onRefresh();
-    } else if (data.isCeoRequest) {
-      toast.success(`Solicitud de ${label} iniciada. Los socios tienen 12hs para rechazarla — si no, se ejecuta automáticamente.`);
-      refetchApproval();
-      queryClient.invalidateQueries({ queryKey: ["project-approval", project.id] });
     } else {
-      toast.success(`Solicitud de ${label} iniciada. Esperando aprobación de los demás socios (${data.approvals}/${data.total})`);
+      toast.success(`Solicitud de ${label} iniciada. Los socios tienen 12hs para rechazarla — si nadie rechaza, se ejecuta automáticamente.`);
       refetchApproval();
       queryClient.invalidateQueries({ queryKey: ["project-approval", project.id] });
     }

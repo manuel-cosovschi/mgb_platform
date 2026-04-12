@@ -23,10 +23,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Lazy expiry: execute any CEO timer that has run out
-  const expired = await db.projectApproval.findFirst({
+  // Lazy expiry: execute any timer that has run out
+  // Primary: explicit expiresAt set on record
+  let expired = await db.projectApproval.findFirst({
     where: { projectId: id, status: "PENDING", expiresAt: { lte: new Date() } },
   });
+  // Fallback: legacy approvals created before expiresAt field existed — treat any
+  // PENDING approval with no expiresAt that is older than 12h as expired.
+  // status: "PENDING" already guarantees nobody rejected (rejection sets → CANCELLED).
+  if (!expired) {
+    const TWELVE_HOURS_AGO = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    expired = await db.projectApproval.findFirst({
+      where: { projectId: id, status: "PENDING", expiresAt: null, createdAt: { lte: TWELVE_HOURS_AGO } },
+    });
+  }
   if (expired) {
     try {
       await executeApproval(expired.id, id, expired.action);
@@ -115,13 +125,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     data: { status: "CANCELLED" },
   });
 
-  // Check if requester is CEO — if so, set 12h expiry
-  const partner = await db.partner.findUnique({
-    where: { userId },
-    select: { title: true },
-  });
-  const isCeo = !!partner?.title && /ceo|director/i.test(partner.title);
-  const expiresAt = isCeo ? new Date(Date.now() + 12 * 60 * 60 * 1000) : undefined;
+  // Every SOCIO request gets a 12h veto window — if nobody rejects within 12h, it executes.
+  const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
 
   const approval = await db.projectApproval.create({
     data: {
@@ -129,7 +134,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       action,
       requestedBy: userId,
       approvedBy: [userId], // requester auto-approves
-      ...(expiresAt && { expiresAt }),
+      expiresAt,
     },
     include: { requester: { select: { id: true, name: true } } },
   });
@@ -145,7 +150,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     approval,
     approvals: 1,
     total: totalSocios,
-    isCeoRequest: isCeo,
-    expiresAt: expiresAt ?? null,
+    isCeoRequest: true,
+    expiresAt,
   });
 }
