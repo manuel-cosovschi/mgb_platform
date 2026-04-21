@@ -248,6 +248,58 @@ enum IntegrationType {
 }
 
 // ─────────────────────────────────────────────
+// SIDE PROJECTS LAB — ENUMS
+// ─────────────────────────────────────────────
+
+enum SideProjectStatus {
+  IDEA
+  EVALUATING
+  VALIDATING
+  PRIORITIZED
+  IN_DEVELOPMENT
+  LAUNCHED
+  ARCHIVED
+}
+
+enum SideProjectType {
+  SAAS
+  MARKETPLACE
+  TOOL
+  AI
+  ECOMMERCE
+  APP
+  OTHER
+}
+
+enum SideProjectRisk {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SideProjectLinkType {
+  DRIVE
+  NOTION
+  FIGMA
+  GITHUB
+  DOMAIN
+  HOSTING
+  OTHER
+}
+
+enum SideTaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum SideTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ─────────────────────────────────────────────
 // AUTH & USUARIOS
 // ─────────────────────────────────────────────
 
@@ -291,6 +343,11 @@ model User {
   performanceReviewsReceived PerformanceReview[] @relation("Reviewee")
   notificationSettings NotificationSetting?
   customFieldValues    CustomFieldValue[]
+
+  ownedSideProjects       SideProject[]            @relation("SideProjectOwner")
+  sideProjectNotes        SideProjectNote[]        @relation("SideProjectNoteAuthor")
+  sideProjectVotes        SideProjectVote[]        @relation("SideProjectVoter")
+  sideProjectActivityLogs SideProjectActivityLog[] @relation("SideProjectActivityActor")
 
   @@map("users")
 }
@@ -1454,4 +1511,121 @@ model ProjectSettlement {
   createdAt  DateTime         @default(now())
 
   @@map("project_settlements")
+}
+
+// ─────────────────────────────────────────────
+// SIDE PROJECTS LAB
+// ─────────────────────────────────────────────
+
+model SideProject {
+  id               String            @id @default(cuid())
+  title            String
+  slug             String            @unique
+  description      String?
+  problem          String?
+  solution         String?
+  audience         String?
+  type             SideProjectType   @default(OTHER)
+  monetization     String?
+  status           SideProjectStatus @default(IDEA)
+  score            Int               @default(0)
+  complexity       Int               @default(5)
+  revenuePotential Int               @default(5)
+  timeEstimate     String?
+  investment       String?
+  risk             SideProjectRisk   @default(MEDIUM)
+  synergy          Int               @default(5)
+  stackSuggested   String?
+  observations     String?
+  brandName        String?
+  slogan           String?
+  brandColors      String?
+  logoUrl          String?
+  mrr              Float?
+  cac              Float?
+  roi              Float?
+  totalRevenue     Float?
+  totalCosts       Float?
+  priorityOrder    Int               @default(0)
+  active           Boolean           @default(true)
+  launchedAt       DateTime?
+  ownerId          String
+  owner            User              @relation("SideProjectOwner", fields: [ownerId], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  links            SideProjectLink[]
+  tasks            SideProjectTask[]
+  notes            SideProjectNote[]
+  votes            SideProjectVote[]
+  activityLogs     SideProjectActivityLog[]
+
+  @@map("side_projects")
+}
+
+model SideProjectLink {
+  id            String              @id @default(cuid())
+  sideProjectId String
+  sideProject   SideProject         @relation(fields: [sideProjectId], references: [id], onDelete: Cascade)
+  type          SideProjectLinkType
+  label         String?
+  url           String
+  createdAt     DateTime            @default(now())
+
+  @@map("side_project_links")
+}
+
+model SideProjectTask {
+  id            String           @id @default(cuid())
+  sideProjectId String
+  sideProject   SideProject      @relation(fields: [sideProjectId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  status        SideTaskStatus   @default(TODO)
+  priority      SideTaskPriority @default(MEDIUM)
+  phase         String?
+  order         Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@map("side_project_tasks")
+}
+
+model SideProjectNote {
+  id            String      @id @default(cuid())
+  sideProjectId String
+  sideProject   SideProject @relation(fields: [sideProjectId], references: [id], onDelete: Cascade)
+  content       String
+  authorId      String
+  author        User        @relation("SideProjectNoteAuthor", fields: [authorId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("side_project_notes")
+}
+
+model SideProjectVote {
+  id            String      @id @default(cuid())
+  sideProjectId String
+  sideProject   SideProject @relation(fields: [sideProjectId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation("SideProjectVoter", fields: [userId], references: [id])
+  value         Int         @default(1)
+  createdAt     DateTime    @default(now())
+
+  @@unique([sideProjectId, userId])
+  @@map("side_project_votes")
+}
+
+model SideProjectActivityLog {
+  id            String      @id @default(cuid())
+  sideProjectId String
+  sideProject   SideProject @relation(fields: [sideProjectId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation("SideProjectActivityActor", fields: [userId], references: [id])
+  action        String
+  metadata      Json?
+  createdAt     DateTime    @default(now())
+
+  @@map("side_project_activity_logs")
 }
