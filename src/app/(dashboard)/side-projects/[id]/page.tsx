@@ -166,16 +166,16 @@ export default function SideProjectDetailPage() {
             <Card>
               <CardHeader><CardTitle className="text-sm">Descripción</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <p className="text-muted-foreground">{p.description as string || "Sin descripción"}</p>
-                {p.problem && (
-                  <div><strong>Problema:</strong> <span className="text-muted-foreground">{p.problem as string}</span></div>
-                )}
-                {p.solution && (
-                  <div><strong>Solución:</strong> <span className="text-muted-foreground">{p.solution as string}</span></div>
-                )}
-                {p.targetAudience && (
-                  <div><strong>Audiencia:</strong> <span className="text-muted-foreground">{p.targetAudience as string}</span></div>
-                )}
+                <p className="text-muted-foreground">{String(p.description ?? "Sin descripción")}</p>
+                {p.problem ? (
+                  <div><strong>Problema:</strong> <span className="text-muted-foreground">{String(p.problem)}</span></div>
+                ) : null}
+                {p.solution ? (
+                  <div><strong>Solución:</strong> <span className="text-muted-foreground">{String(p.solution)}</span></div>
+                ) : null}
+                {p.targetAudience ? (
+                  <div><strong>Audiencia:</strong> <span className="text-muted-foreground">{String(p.targetAudience)}</span></div>
+                ) : null}
                 {(p.tags as string[])?.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {(p.tags as string[]).map((tag) => (
@@ -278,7 +278,7 @@ export default function SideProjectDetailPage() {
                   <a href={link.url as string} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1">
                     {(link.title as string) || (link.url as string)}
                   </a>
-                  {link.type && <Badge variant="outline" className="text-xs shrink-0">{link.type as string}</Badge>}
+                  {link.type ? <Badge variant="outline" className="text-xs shrink-0">{String(link.type)}</Badge> : null}
                 </div>
               ))}
             </CardContent>

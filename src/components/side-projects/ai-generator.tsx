@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ScoreBadge } from "./score-display";
 import { calculateScore } from "@/lib/side-projects/score-engine";
 
-interface GeneratedIdea {
+export interface GeneratedIdea {
   title: string;
   description: string;
   problem: string;

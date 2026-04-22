@@ -10,7 +10,7 @@ import { IdeaCard } from "@/components/side-projects/idea-card";
 import { IdeaForm } from "@/components/side-projects/idea-form";
 import { BrainstormingBoard } from "@/components/side-projects/brainstorming-board";
 import { PipelineView } from "@/components/side-projects/pipeline-view";
-import { AIGenerator } from "@/components/side-projects/ai-generator";
+import { AIGenerator, GeneratedIdea } from "@/components/side-projects/ai-generator";
 import { IdeaComparator } from "@/components/side-projects/idea-comparator";
 import { SideProjectsKpis } from "@/components/side-projects/kpis";
 import { toast } from "sonner";
@@ -118,7 +118,7 @@ export default function SideProjectsPage() {
     } catch { /* empty */ }
   };
 
-  const handleAddGeneratedIdea = async (idea: Record<string, unknown>) => {
+  const handleAddGeneratedIdea = async (idea: GeneratedIdea) => {
     setSubmitting(true);
     try {
       const res = await fetch("/api/side-projects", {
@@ -234,7 +234,7 @@ export default function SideProjectsPage() {
         </TabsContent>
 
         <TabsContent value="ai">
-          <AIGenerator onAddIdea={handleAddGeneratedIdea as (idea: Record<string, unknown>) => void} />
+          <AIGenerator onAddIdea={handleAddGeneratedIdea} />
         </TabsContent>
       </Tabs>
 
