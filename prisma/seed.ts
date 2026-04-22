@@ -716,6 +716,143 @@ async function main() {
 
   console.log("✅ Audit logs creados");
 
+  // ──────────────────────────────────────────
+  // SIDE PROJECTS
+  // ──────────────────────────────────────────
+  const sideProjectsData = [
+    {
+      title: "Sistema de Turnos para Barberías",
+      slug: "turnos-barberias",
+      description: "App de reservas con panel de barbero, pagos y recordatorios por WhatsApp",
+      problem: "Las barberías pierden clientes por esperas largas y cancelaciones",
+      solution: "Sistema automatizado de turnos con confirmación por WhatsApp",
+      targetAudience: "Barberías y peluquerías",
+      status: "EVALUATING" as const,
+      type: "SAAS" as const,
+      priority: "P2_NEXT" as const,
+      complexity: "SIMPLE" as const,
+      revenueScore: 7, easeScore: 8, synergyScore: 9, speedScore: 7, riskScore: 7,
+      totalScore: 76,
+      emoji: "💈", color: "#6366f1",
+      tags: ["turnos", "barbería", "whatsapp"],
+      techStack: ["Next.js", "Prisma", "WhatsApp API"],
+      competitors: ["Calendly", "Booksy"],
+    },
+    {
+      title: "Gestión para Gimnasios",
+      slug: "gestion-gimnasios",
+      description: "ERP con control de acceso, pagos recurrentes y rutinas personalizadas",
+      problem: "Gimnasios usan Excel y pierden trazabilidad de pagos y asistencia",
+      solution: "Plataforma integral con control de acceso NFC y gestión de cobros",
+      targetAudience: "Gimnasios y centros de fitness",
+      status: "IDEA" as const,
+      type: "SAAS" as const,
+      priority: "P3_LATER" as const,
+      complexity: "COMPLEX" as const,
+      revenueScore: 8, easeScore: 6, synergyScore: 8, speedScore: 5, riskScore: 6,
+      totalScore: 67,
+      emoji: "🏋️", color: "#10b981",
+      tags: ["gimnasio", "erp", "cobros"],
+      techStack: ["Next.js", "PostgreSQL", "Mercado Pago"],
+      competitors: ["Gympal", "Mindbody"],
+    },
+    {
+      title: "Menú Digital con IA para Restaurantes",
+      slug: "menu-ia-restaurantes",
+      description: "Menú interactivo con recomendaciones inteligentes y pedidos desde la mesa",
+      problem: "Restaurantes imprimen menús costosos y no pueden actualizarlos",
+      solution: "QR con menú digital + IA que sugiere platos según preferencias",
+      targetAudience: "Restaurantes y bares",
+      status: "APPROVED" as const,
+      type: "SAAS" as const,
+      priority: "P1_NOW" as const,
+      complexity: "MODERATE" as const,
+      revenueScore: 7, easeScore: 7, synergyScore: 7, speedScore: 8, riskScore: 7,
+      totalScore: 72,
+      emoji: "🍽️", color: "#f59e0b",
+      tags: ["restaurantes", "menú", "ia"],
+      techStack: ["Next.js", "OpenAI", "QR"],
+      competitors: ["Menufy", "Yelp"],
+    },
+    {
+      title: "Portal de Pacientes para Clínicas",
+      slug: "portal-clinicas",
+      description: "Historia clínica digital, turnos online y recetas electrónicas",
+      problem: "Clínicas manejan historias clínicas en papel y turnos por teléfono",
+      solution: "Portal web con historial, turnos y recetas",
+      targetAudience: "Clínicas médicas",
+      status: "IDEA" as const,
+      type: "SAAS" as const,
+      priority: "P4_MAYBE" as const,
+      complexity: "MASSIVE" as const,
+      revenueScore: 9, easeScore: 5, synergyScore: 7, speedScore: 4, riskScore: 5,
+      totalScore: 63,
+      emoji: "🏥", color: "#ef4444",
+      tags: ["salud", "turnos", "historia-clinica"],
+      techStack: ["Next.js", "PostgreSQL", "HL7 FHIR"],
+      competitors: ["Doctoralia", "ClinicCloud"],
+    },
+    {
+      title: "Bot WhatsApp para Atención al Cliente",
+      slug: "bot-whatsapp-atencion",
+      description: "Chatbot inteligente que responde consultas y escala a humanos",
+      problem: "Empresas responden WhatsApp manualmente",
+      solution: "Bot con IA que atiende 24/7 y escala conversaciones complejas",
+      targetAudience: "PYMEs con alto volumen de WhatsApp",
+      status: "IN_DEVELOPMENT" as const,
+      type: "TOOL" as const,
+      priority: "P1_NOW" as const,
+      complexity: "MODERATE" as const,
+      revenueScore: 8, easeScore: 6, synergyScore: 9, speedScore: 6, riskScore: 6,
+      totalScore: 71,
+      emoji: "🤖", color: "#8b5cf6",
+      tags: ["whatsapp", "chatbot", "ia"],
+      techStack: ["Node.js", "WhatsApp Business API", "OpenAI"],
+      competitors: ["ManyChat", "Respond.io"],
+    },
+  ];
+
+  for (const sp of sideProjectsData) {
+    const existing = await prisma.sideProject.findUnique({ where: { slug: sp.slug } });
+    if (existing) continue;
+
+    await prisma.sideProject.create({
+      data: {
+        ...sp,
+        createdById: manuel.id,
+        tasks: {
+          createMany: {
+            data: [
+              { title: "Investigar mercado", status: "DONE", order: 0 },
+              { title: "Definir MVP", status: "TODO", order: 1 },
+              { title: "Prototipo UI", status: "TODO", order: 2 },
+            ],
+          },
+        },
+        notes: {
+          create: {
+            content: `Idea discutida en reunión de socios. ${sp.description}`,
+            authorId: manuel.id,
+          },
+        },
+        votes: {
+          createMany: {
+            data: [{ userId: manuel.id }, { userId: gabriel.id }],
+          },
+        },
+        activities: {
+          create: {
+            userId: manuel.id,
+            action: "created",
+            details: { title: sp.title },
+          },
+        },
+      },
+    });
+  }
+
+  console.log("✅ Side projects creados");
+
   console.log("\n🎉 Seed completado exitosamente!\n");
   console.log("Credenciales:");
   console.log("─────────────────────────────────────────");
